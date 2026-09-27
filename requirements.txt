@@ -1,0 +1,13 @@
+# Runtime dependencies (kept in sync with pyproject.toml)
+openai>=1.30,<3
+pydantic>=2.7,<3
+
+# Load .env for the live model example
+python-dotenv>=1,<2
+
+# Package build tools
+build>=1,<2
+setuptools>=68
+wheel>=0.45,<1
+
+# Tests use Python's built-in unittest; pip installs transitive dependencies.

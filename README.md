@@ -1,17 +1,6 @@
 # BPCAgent
 
-从 `SciResearchSystem` 提取的轻量级 Agent 开发包，用于创建智能体、注册工具和执行问答。项目目录名为 `BPCAgent`，Python 包名和安装名为 `bpcagent`。
-
-## 本次提取范围
-
-- `Agent`：智能体基类与内存中的对话历史。
-- `BasicAgent`：普通问答、流式问答及文本协议驱动的工具调用。
-- `ReActAgent`：使用 Action / Observation 循环调用工具。
-- `MyLLM`、`Config`、`Message` 和异常类：模型接口与基础数据结构。
-- `Tool`、`ToolParameter`、`ToolRegistry`：工具定义、注册和执行。
-- `CalculatorTool`：可直接运行的通用工具示例。
-
-本阶段没有迁入业务智能体、业务工具、Workflow、Planner、Reflection、工具链或并行执行器。原始 `SciResearchSystem` 目录保留。
+轻量级 Agent 开发包，用于创建智能体、注册工具和执行问答。项目目录名为 `BPCAgent`，Python 包名和安装名为 `bpcagent`。
 
 ## 目录结构
 
@@ -37,32 +26,7 @@ BPCAgent/
     └── exceptions.py       # 框架异常
 ```
 
-采用单层模块结构。安装后可从任意工作目录导入 `bpcagent`，无需手动修改 `sys.path`，也不依赖 `SciResearchSystem`。
-
-### 结构参考与导入路径
-
-参考 [Hugging Face smolagents](https://github.com/huggingface/smolagents/tree/main/src/smolagents) 的 `agents.py`、`models.py`、`tools.py`、`default_tools.py` 划分，以及 [Pydantic AI](https://github.com/pydantic/pydantic-ai/tree/main/pydantic_ai_slim/pydantic_ai) 的 `messages.py`、`exceptions.py` 命名。当前包按职责分为 7 个模块，工具接口与注册表放在一起，具体内置工具放在 `default_tools.py`。
-
-顶层公开导入继续使用：
-
-```python
-from bpcagent import Agent, BasicAgent, ReActAgent, MyLLM
-from bpcagent import Tool, ToolParameter, ToolRegistry, CalculatorTool
-```
-
-原先直接导入内部文件的代码，需要按下表调整。旧目录已移除：
-
-| 原导入路径 | 新导入路径 |
-| --- | --- |
-| `bpcagent.core.agent`、`bpcagent.basic_agent`、`bpcagent.react_agent` | `bpcagent.agents` |
-| `bpcagent.core.llm` | `bpcagent.models` |
-| `bpcagent.core.message` | `bpcagent.messages` |
-| `bpcagent.core.config` | `bpcagent.config` |
-| `bpcagent.core.exception` | `bpcagent.exceptions` |
-| `bpcagent.tools.core.base`、`bpcagent.tools.core.registry` | `bpcagent.tools` |
-| `bpcagent.tools.calculator` | `bpcagent.default_tools` |
-
-原先从 `bpcagent.core` 导入的 `Agent`、`Config`、`Message`、`MyLLM` 可直接从 `bpcagent` 导入；异常类从 `bpcagent.exceptions` 导入。`CalculatorTool` 可从 `bpcagent` 或 `bpcagent.default_tools` 导入。
+采用单层模块结构。安装后可从任意工作目录导入 `bpcagent`，无需手动修改 `sys.path`。
 
 新建的内置工具可以加入 `default_tools.py`；调用方自己的工具只需继承 `Tool` 并注册，无需修改包目录。
 
@@ -79,21 +43,6 @@ python -m pip install --no-build-isolation -e .
 ```
 
 已经创建过环境时，从 `conda activate bpcagent` 开始即可。Conda 管理 Python 环境，环境内的 `python -m pip` 安装本项目的 Python 依赖。最后一条命令将本项目以可编辑方式安装，修改 `src/` 后立即生效；构建依赖已由 `requirements.txt` 安装。
-
-`requirements.txt` 包含以下直接依赖，它们的间接依赖由 pip 自动安装：
-
-| 依赖 | 用途 |
-| --- | --- |
-| `openai` | OpenAI 兼容的模型接口 |
-| `pydantic` | 消息、配置和工具参数的数据结构 |
-| `python-dotenv` | 真实模型示例读取 `.env` |
-| `build` | 生成 wheel 和源码分发包 |
-| `setuptools` | Python 包构建后端 |
-| `wheel` | wheel 构建工具 |
-
-测试使用 Python 自带的 `unittest`，无需安装额外测试框架。`requirements.txt` 提供兼容版本范围，`pyproject.toml` 继续声明可安装包的元数据及依赖。
-
-每次打开新终端，运行项目前先执行 `conda activate bpcagent`。可以使用 `conda env list` 查看环境，使用 `conda deactivate` 退出当前环境。
 
 ## 运行单次问答
 
@@ -168,26 +117,3 @@ class UppercaseTool(Tool):
 `BasicAgent` 的原有调用格式为 `[TOOL_CALL:uppercase:hello]`，也支持对象形式的 JSON 参数，例如 `[TOOL_CALL:uppercase:{"input":"hello"}]`。`ReActAgent` 使用 `Action: uppercase[hello]`。
 
 建议给 `BasicAgent` 注册 `Tool` 对象。原有的 `register_function()` 入口保留，可通过 `ToolRegistry.execute_tool()` 或 `ReActAgent` 执行；`BasicAgent` 目前只按 `Tool` 对象查找。
-
-## 测试与构建
-
-测试使用 Python 标准库 `unittest`，模型与 SDK 请求均被模拟，计算器实际执行。不会读取 `.env` 或调用外部 API：
-
-```bash
-python -m unittest discover -s tests -v
-python -m build
-```
-
-构建生成 `dist/` 下的 wheel 和源代码分发包。`examples/` 和 `tests/` 随源代码分发包提供。
-
-## 相对原始代码的改动
-
-主要执行逻辑沿用原始代码，提取和目录精简时做了以下调整：
-
-1. 将 Agent、模型、工具、消息、配置和异常整理为单层模块，相关导入统一改为新路径。
-2. 增加 `__init__.py`、公开导出、标准打包配置、文档、示例和测试。
-3. 修复注册表读取函数工具描述时的 `escription` 拼写错误。
-4. 模型调用失败时抛出已有的 `LLMException`，避免将异常对象作为正常回答返回。
-5. `MyLLM.think()` 接收流式入口传来的参数，并转发温度和输出长度配置。
-
-本阶段保留了原有文本工具协议、字符串返回值和 `print` 日志。工具调用结果暂时以用户消息回传给模型；对话历史只保存用户输入与最终回答；`Config.max_history_length` 尚未执行历史裁剪；流式入口不执行工具调用。后续可以在这个独立包中逐步改造这些接口。

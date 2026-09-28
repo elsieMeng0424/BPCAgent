@@ -1,0 +1,175 @@
+BPCAgent 统一配置入口改进日志
+当前接口说明：[10] 将配置合并入口精简为 Config.resolve；[11] 将模型连接参数统一为 api_key/base_url，配置通过 llm.config 读取。前文保留为历史记录。
+开始记录：2026-09-28T15:09:11+08:00
+范围：Config、MyLLM、Agent 配置接入、示例与文档、离线回归测试。
+
+[01] 基线检查
+- 阅读 config.py、models.py、agents.py、现有 9 项测试、示例与包配置。
+- 原配置分散于配置类和模型客户端；Agent 迭代参数为硬编码默认值。
+- 保留既有单层包结构、依赖、用户系统提示词和未提交文件。不读取或修改真实 .env。
+- 使用现有 Conda bpcagent 环境；无新增依赖。
+
+[02] src/bpcagent/config.py
+- 统一 defaults < environment < Config 显式字段 < overrides 的合并顺序。
+- 用 exclude_unset=True 保证局部 Config 不覆盖其他环境配置；返回完整、不可变的配置快照。
+- resolve 支持注入 environ，空字典禁用环境读取。
+- 新增模型连接字段、timeout、max_tool_iterations、max_steps；保留原系统配置字段。
+- model 默认 None，模型名称需显式提供。
+- 非负有限 temperature、正整数 token/迭代限制、正有限 timeout；数字字段拒绝布尔值。
+- 可选数值环境变量空值表示 None；连接字段去除首尾空白。真实客户端才检查连接字段必填。
+- SecretStr 掩码及 hide_input_in_errors 防止配置展示泄露密钥；to_dict 仅用于诊断展示。
+- 解析入口把 Pydantic 校验失败转为 ConfigException；直接 Config(...) 保留 Pydantic ValidationError。
+
+[03] src/bpcagent/models.py
+- 移除独立环境读取，以 Config.resolve 创建客户端配置。
+- sentinel 区分未传入与显式 None：temperature/max_tokens=None 省略请求参数；timeout=None/0 校验失败。
+- invoke/think 共享请求参数构造；构造额外参数与单次参数合并后深复制，单次优先。
+- 单次 temperature/max_tokens/timeout 校验后覆盖，不修改客户端快照。
+- 模型、连接、Agent 设置及 messages/stream 由相应接口负责，不允许经模型请求 kwargs 改写。
+- 请求配置校验在 SDK 异常捕获之外，保留 ConfigException 与 LLMException 的区分。
+- 原 print 输出及 SDK 异常传播行为保留。
+
+[04] src/bpcagent/agents.py
+- Agent.__init__ 使用 Config.resolve(config) 解析并保存自己的快照；不修改传入的 llm。
+- BasicAgent.run 的 max_tool_iterations 默认从字面量 3 改为 None。
+  None 使用配置值；显式传入时校验覆盖参数，只对当前运行生效。
+- ReActAgent.__init__ 的 max_steps 默认从字面量 5 改为 None。
+  显式传入时创建 Agent 自己的覆盖快照，打印和循环使用最终解析值。
+- 不向 SDK 传递 Agent 迭代参数；原循环算法、历史保存、工具解析与终止策略保持原实现。
+- 注意：BasicAgent 工具迭代耗尽后仍有额外一次模型调用，已纳入测试。
+
+[05] examples/single_qa.py 与 .env.example
+- 真实模式显式加载项目 .env，再解析配置，分别传给 MyLLM 与 BasicAgent。
+- 离线模式使用 Config.resolve(environ={})，确保外部环境中的非法配置不影响模拟问答。
+- 保留原有用户系统提示词及计算器实际执行逻辑。
+- .env.example 添加温度、token 限制、Agent 迭代设置和保留系统字段，说明空值语义。
+- 未读取、复制或修改实际 .env 凭据。
+
+[06] 测试与首轮问题处理
+- 初次回归运行已有 9 项测试，结果 FAILED (errors=9)。
+- 原因：测试依赖外部环境，受到进程中已有变量的影响。
+- 处理：test_agents.py / test_models.py 的 setUp 使用 patch.dict(os.environ, {}, clear=True)，
+  每项测试完成后恢复环境；保留生产代码对非法配置的明确报错。
+- 新增 test_config.py，7 项测试：
+  1. 默认值与局部 Config 合并，不覆盖未显式设置字段对应的环境值。
+  2. 显式 Config 与覆盖参数优先；temperature=0 有效。
+  3. 空 environ 禁用外部环境、快照稳定且不可赋值。
+  4. 全部支持的环境变量映射、可选空值、连接字段空白处理。
+  5. 非法数值/布尔值/未知字段在配置入口失败。
+  6. 密钥展示及错误文本脱敏。
+  7. 普通配置无需凭据，创建真实客户端才需要模型连接信息。
+- test_models.py 新增 5 项测试：
+  1. 环境 -> 局部 Config -> 构造参数 -> 请求覆盖最终到达 SDK 的真实调用参数。
+  2. 显式 None 在流式及非流式请求中省略参数。
+  3. 请求不重读环境；额外嵌套参数深复制；单次额外参数和 timeout 覆盖生效。
+  4. 非法请求参数在调用 SDK 前失败，两种请求模式一致。
+  5. 非法 timeout、缺失凭据在创建 SDK 客户端前失败。
+- test_agents.py 新增 4 项测试：
+  1. BasicAgent 配置与单次覆盖改变实际工具执行次数，且不污染默认值或 SDK 参数。
+  2. ReActAgent 配置与构造覆盖改变实际循环次数，原传入配置不受影响。
+  3. Agent 环境默认值生效，非法迭代上限在模型调用前失败。
+  4. Agent 配置不会反向修改已有 MyLLM 实例。
+- 原有 9 项问答、历史、计算器、函数工具、流式与异常传播测试保留。
+
+[07] README.md
+- 更新目录与共享 Config 用法。
+- 添加字段/环境变量/默认值对照表、配置优先级、快照与显式 None 的说明。
+- 记录配置读取方式、错误类型、保留字段和 Agent/模型各自配置边界。
+- 说明构造额外参数按整项覆盖、真实服务仍需支持相应模型参数。
+- 添加 Conda 环境内运行离线单元测试的命令。
+
+[08] 实际验证结果
+执行环境：现有 /opt/anaconda3/envs/bpcagent/bin/python（Python 3.11），未安装新依赖。
+工作目录：BPCAgent。
+
+命令：/opt/anaconda3/envs/bpcagent/bin/python -B -m unittest discover -s tests -v
+结果：Ran 25 tests in 0.025s；OK。
+说明：原有 9 项 + 新增 16 项；模型 SDK 使用 mock，不发生真实 API 请求。
+
+命令：/opt/anaconda3/envs/bpcagent/bin/python -B examples/single_qa.py
+结果：退出码 0；回答 2 + 3 * 4 = 14；保存 2 条历史消息。
+
+命令：/opt/anaconda3/envs/bpcagent/bin/python -B examples/single_qa.py --with-tools
+结果：退出码 0；实际执行 CalculatorTool 得到 14；保存 2 条历史消息。
+
+命令：git diff --check
+结果：退出码 0，无空白错误。
+
+[09] 完成范围与后续边界
+- 本次修改：src/bpcagent/config.py、models.py、agents.py；examples/single_qa.py；
+  tests/test_agents.py、test_models.py；README.md；.env.example。
+- 本次新增：tests/test_config.py、CONFIG_REFACTOR.log。
+- 包结构、导出、requirements.txt 与 pyproject.toml 无需修改；使用原 Conda 可编辑安装即可生效。
+- 未引入 workflow、历史裁剪、日志系统或新的工具调用协议。
+- default_provider/log_level/max_history_length 保留但未实现对应行为，文档明确标注。
+- 未调用付费真实模型；本次验证确认配置传递与本地执行链路，不涵盖特定服务的参数兼容性。
+- 未修改实际 .env；未提交 Git commit。
+完成记录：2026-09-28T15:14:13+08:00
+
+[10] 按用户反馈精简配置接口
+记录时间：2026-09-28T15:58:13+08:00
+
+1. 模型名称
+- model 直接声明为 Optional[str] = None，模型名称只使用 model。
+
+2. 合并配置操作入口
+- 统一使用 Config.resolve。
+- 使用 config、overrides、environ 参数显式表达配置来源和覆盖值。
+- 初次解析：Config.resolve(overrides={"timeout": 30})。
+- 配置副本：Config.resolve(config, overrides={"timeout": 10}, environ={})。
+- resolve 默认仍读取进程环境；不会自动加载 .env 文件。
+
+3. 更新调用方
+- models.py 请求构造使用 Config.resolve(self.config, overrides=settings, environ={})。
+- agents.py 的 BasicAgent 单次迭代覆盖和 ReActAgent 构造覆盖改用统一入口。
+- examples/single_qa.py 的真实模式改为 Config.resolve()；保留应用层显式加载 .env。
+- 更新 test_config.py、test_models.py 中的调用；保留优先级、快照稳定性、脱敏、请求隔离等验证。
+- README 更新统一入口说明、配置副本示例和模型字段说明。
+
+4. 中文说明
+- config.py 的模块说明、类说明、全部方法说明和普通注释改为中文。
+- 为两个字段校验函数补充中文说明，resolve 说明补充参数含义、优先级和环境读取行为。
+- 数值字段拒绝布尔值的错误说明同步改为中文。
+
+5. 验证结果
+- /opt/anaconda3/envs/bpcagent/bin/python -B -m unittest discover -s tests -v
+  退出码 0；Ran 25 tests in 0.023s；OK。
+- /opt/anaconda3/envs/bpcagent/bin/python -B examples/single_qa.py --with-tools
+  退出码 0；实际调用计算器得到 14，保存 2 条历史消息。
+- git diff --check：无空白错误。
+- 未读取或修改真实 .env，未调用真实模型，无新增依赖。
+
+[11] 模型客户端统一命名与冗余清理
+记录时间：2026-09-28T16:09:27+08:00
+
+1. 检查结果与命名统一
+- MyLLM 构造参数统一为 model、api_key、base_url，与 Config 及 OpenAI SDK 一致。
+
+2. 其他冗余处理
+- 配置统一从 llm.config 中读取。
+- 保留 llm.model 只读属性：agents.py 的 Agent 展示和模拟模型接口正在使用它。
+- 删除只调用一次的 _create_OpenAI_client，直接在构造函数创建 OpenAI 客户端。
+- 保留配置字段列表从 Config.model_fields 派生，排除请求级字段，避免手写重复字段清单。
+- self.kwargs 改为私有的 self._request_defaults；初始化时校验，移除每次请求对该内部默认值的重复检查。
+- 请求参数先合并再深复制；单次请求覆盖仍逐次校验。
+- models.py 的模块、类和方法说明改为中文。
+
+3. 保留的必要机制
+- _UNSET 区分未传入与显式 None；温度/token 的 None 表示省略参数，timeout=None 仍报错。
+- Config.resolve 继续统一校验配置优先级和数值范围。
+- deepcopy 保证调用方和 SDK 对嵌套参数的修改不会污染默认设置或后续请求。
+- invoke/think 共用参数构造，但各自保留普通响应与流式迭代的处理及异常边界。
+
+4. 调用、文档与测试
+- test_models.py 初始化改用统一名称，显式 base_url 覆盖验证直接检查 SDK 客户端收到的地址。
+- 更新模型/Agent 测试中的属性读取路径为 llm.config；嵌套参数隔离测试改为验证后续实际请求，避免依赖内部属性。
+- 验证连接参数和 Agent 参数不得作为模型请求覆盖项。
+- README 更新构造示例、配置读取路径及密钥展示说明。
+- 本次未修改 config.py，保留用户已有编辑。
+
+5. 实际验证
+命令：/opt/anaconda3/envs/bpcagent/bin/python -B -m unittest discover -s tests -v
+结果：退出码 0；Ran 25 tests in 0.027s；OK。
+命令：git diff --check
+结果：无空白错误。
+未读取真实 .env、未请求真实模型、无新增依赖。

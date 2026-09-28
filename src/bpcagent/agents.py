@@ -23,7 +23,7 @@ class Agent(ABC):
         self.name = name
         self.llm = llm
         self.sys_prompt = sys_prompt
-        self.config = config or Config()
+        self.config = Config.resolve(config)
         self._history: list[Message] = []
 
     @abstractmethod
@@ -68,10 +68,14 @@ class BasicAgent(Agent):
         self.enable_tool_calling = enable_tool_calling and tool_registry is not None
         print(f"✅ Agent {name} 初始化完成，工具调用: {'启用' if self.enable_tool_calling else '禁用'}")
 
-    def run(self, input: str, max_tool_iterations: int = 3, **kwargs) -> str:
+    def run(self, input: str, max_tool_iterations: Optional[int] = None, **kwargs) -> str:
         """
         实现简单的对话逻辑，支持工具调用
         """
+        run_config = self.config if max_tool_iterations is None else Config.resolve(
+            self.config, overrides={"max_tool_iterations": max_tool_iterations}, environ={}
+        )
+        max_tool_iterations = run_config.max_tool_iterations
         print(f"🤖 {self.name} 正在解决问题: {input}")
 
         # 构建消息列表并添加系统消息
@@ -441,7 +445,7 @@ class ReActAgent(Agent):
         sys_prompt: Optional[str] = None,
         config: Optional[Config] = None,
         tool_registry: Optional[ToolRegistry] = None,
-        max_steps: int = 5,
+        max_steps: Optional[int] = None,
         prompt_template: Optional[str] = None
     ):
         """
@@ -455,9 +459,11 @@ class ReActAgent(Agent):
         # 如果没有提示词模版就使用默认模版
         self.prompt_template = prompt_template if prompt_template else REACT_PROMPT_TEMPLATE
 
-        self.max_steps = max_steps
+        if max_steps is not None:
+            self.config = Config.resolve(self.config, overrides={"max_steps": max_steps}, environ={})
+        self.max_steps = self.config.max_steps
         self.current_history: List[str] = []
-        print(f"✅ ReAct Agent {name} 初始化完成，最大步数: {max_steps}")
+        print(f"✅ ReAct Agent {name} 初始化完成，最大步数: {self.max_steps}")
 
     def run(self, input: str, **kwargs) -> str:
         """

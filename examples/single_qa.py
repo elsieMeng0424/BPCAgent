@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 from unittest.mock import Mock
 
-from bpcagent import BasicAgent, CalculatorTool, MyLLM, ToolRegistry
+from bpcagent import BasicAgent, CalculatorTool, Config, MyLLM, ToolRegistry
 from bpcagent.exceptions import BasicException
 
 
@@ -23,9 +23,11 @@ def main() -> int:
             except ImportError:
                 parser.error('真实模型示例需要先执行：python -m pip install -r requirements.txt')
             load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
-            llm = MyLLM()
+            config = Config.resolve()
+            llm = MyLLM(config=config)
         else:
             print("离线演示：模型响应为预设文本，工具调用模式会实际执行计算器。")
+            config = Config.resolve(environ={})
             llm = Mock(spec=MyLLM)
             llm.model = "offline-demo"
             responses = ["2 + 3 * 4 = 14。"]
@@ -41,6 +43,7 @@ def main() -> int:
         agent = BasicAgent(
             name="SingleQA",
             llm=llm,
+            config=config,
             sys_prompt="请回答问题。如果有可用的计算器，请使用它完成计算。",
             tool_registry=registry,
             enable_tool_calling=args.with_tools,

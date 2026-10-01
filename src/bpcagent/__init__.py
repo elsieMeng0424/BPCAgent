@@ -5,7 +5,7 @@ from .config import Config
 from .default_tools import CalculatorTool
 from .messages import Message
 from .models import MyLLM
-from .tools import Tool, ToolParameter, ToolRegistry
+from .tools import FunctionTool, Tool, ToolArgs, ToolError, ToolRegistry, ToolResult
 
 __all__ = [
     "Agent",
@@ -16,6 +16,9 @@ __all__ = [
     "MyLLM",
     "ReActAgent",
     "Tool",
-    "ToolParameter",
+    "ToolArgs",
+    "FunctionTool",
+    "ToolError",
+    "ToolResult",
     "ToolRegistry",
 ]

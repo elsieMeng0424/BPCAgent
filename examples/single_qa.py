@@ -32,7 +32,7 @@ def main() -> int:
             llm.model = "offline-demo"
             responses = ["2 + 3 * 4 = 14。"]
             if args.with_tools:
-                responses.insert(0, "[TOOL_CALL:calculate:2+3*4]")
+                responses.insert(0, '[TOOL_CALL:calculate:{"input":"2+3*4"}]')
             llm.invoke.side_effect = responses
 
         registry = None

@@ -18,21 +18,35 @@ BPCAgent/
 │   ├── test_tools.py       # 注册、校验、执行和结构化工具结果
 │   ├── test_agents.py      # 问答、历史与实际工具执行
 │   ├── test_config.py      # 配置优先级、校验、快照与脱敏
-│   └── test_models.py      # 模型适配、流式与异常传播
+│   ├── test_models.py      # 模型适配、流式与异常传播
+│   ├── test_messages.py    # 消息序列化与角色约束
+│   └── test_tool_call.py   # 原生协议与真实计算器的离线集成测试
 └── src/bpcagent/
-    ├── __init__.py         # 对外导出常用类
-    ├── agents.py           # Agent、BasicAgent、ReActAgent
-    ├── models.py           # MyLLM 模型接口
-    ├── tools.py            # Tool、ToolArgs、FunctionTool、ToolResult、ToolRegistry
-    ├── default_tools.py    # CalculatorTool 等内置工具
-    ├── messages.py         # Message 与消息角色
-    ├── config.py           # Config
-    └── exceptions.py       # 框架异常
+    ├── __init__.py         # 包的公共接口
+    ├── agents/
+    │   ├── __init__.py     # 智能体相关接口导出
+    │   ├── agents.py       # Agent、BasicAgent、ReActAgent
+    │   ├── models.py       # MyLLM 模型接口
+    │   ├── messages.py     # Message、ToolCall、LLMResponse
+    │   ├── config.py       # Config
+    │   └── exceptions.py   # 框架异常
+    └── tools/
+        ├── __init__.py     # 工具相关接口导出
+        ├── tool.py         # Tool、ToolArgs、FunctionTool、ToolResult、ToolRegistry
+        └── calculator.py   # CalculatorArgs、CalculatorTool
 ```
 
-采用单层模块结构。安装后可从任意工作目录导入 `bpcagent`，无需手动修改 `sys.path`。
+按职责分为 `agents` 和 `tools` 两个 Python 包。安装后可从任意工作目录导入 `bpcagent`，无需手动修改 `sys.path`。
 
-新建的内置工具可以加入 `default_tools.py`；调用方自己的工具只需继承 `Tool` 并注册，无需修改包目录。
+可从子包导入，也可使用顶层公共接口：
+
+```python
+from bpcagent.agents import BasicAgent, Config, MyLLM
+from bpcagent.tools import CalculatorTool, ToolRegistry
+from bpcagent.agents.exceptions import AgentException
+```
+
+具体实现可通过 `bpcagent.tools.tool`、`bpcagent.tools.calculator` 等模块导入。新增内置工具在 `tools/` 下单独建模块，并在该包的 `__init__.py` 中导出；调用方自己的工具只需继承 `Tool` 并注册。
 
 ## 使用 Conda 安装
 
@@ -100,7 +114,7 @@ answer = agent.run("计算 2+3*4。")
 print(answer)
 ```
 
-同一个 Agent 实例保存多次 `run()` 的输入和最终回答，可以使用 `get_history()` 查看、`clear_history()` 清空。普通流式问答使用 `run_using_stream()`。
+同一个 Agent 实例保存多次 `run()` 的输入和最终回答，可以使用 `get_history()` 查看、`clear_history()` 清空。普通流式问答使用 `run_using_stream()`，需要关闭工具调用；启用非空工具注册表时该入口会明确报错。空流或纯空白流不会写入成功历史。
 
 ## 统一配置入口
 
@@ -137,11 +151,12 @@ print(answer)
 partial = Config(max_tokens=500)
 config = Config.resolve(partial)
 llm = MyLLM(config=config, timeout=60)
-answer = llm.invoke(
+response = llm.invoke(
     [{"role": "user", "content": "你好"}],
     temperature=None,  # 本次不发送 temperature
     timeout=10,        # 本次使用 10 秒超时
 )
+print(response.content)
 ```
 
 `Config(...)` 仅创建并校验显式配置；`Config.resolve(...)` 是唯一的配置合并入口，按优先级合并各来源并返回完整快照。字段不可直接赋值，需要更改时仍使用 `resolve`：
@@ -249,7 +264,7 @@ registry.register_function(
 
 函数由 `FunctionTool` 包装后走同一注册路径。按参数模型的字段名传入关键字参数，嵌套模型保留实例类型；函数必须为普通同步函数，不接受仅位置参数、`*args` 或 `**kwargs`。签名不匹配时在注册阶段报错。
 
-名称使用 1—64 个字母、数字、下划线或连字符；`Finish` 用于 ReAct 完成动作。名称重复默认抛出 `ToolException`，有意替换时指定 `replace=True`。`get_tool/list_tools/unregister_tool` 对所有工具行为一致。
+名称使用 1—64 个字母、数字、下划线或连字符。名称重复默认抛出 `ToolException`，有意替换时指定 `replace=True`。`get_tool/list_tools/unregister_tool` 对所有工具行为一致。
 
 ### ToolResult 协议
 
@@ -294,22 +309,43 @@ tools = registry.to_openai_tools()
 
 当前明确导出 `strict=False`，保留默认值和可省略字段；本地严格类型校验始终执行。OpenAI 的服务端 `strict` 是另一层约束，本阶段未实现其 Schema 子集转换或服务验证。该外层格式对应 Chat Completions，Responses 使用不同封装，尚未增加适配。
 
-参考入口：[OpenAI Function calling](https://platform.openai.com/docs/guides/function-calling)。本次网络访问受限，格式通过本地安装的 OpenAI SDK 类型定义核对，尚未进行真实 API 验证。
+参考入口：[OpenAI Function calling](https://platform.openai.com/docs/guides/function-calling)。当前配置服务的原生自动工具调用已通过计算器真实验证；服务端严格 Schema 模式尚未验证。
 
-### 当前 Agent 的调用形式与后续范围
+### 原生工具调用
 
-本阶段普通 `run()` 仍从模型文本提取请求，参数统一为 JSON 对象：
+`MyLLM.invoke()` 返回 `LLMResponse`：`content` 为可空文本，`tool_calls` 为调用列表，`finish_reason` 为结束原因。每个 `ToolCall` 含 `id`、`name`、原始 JSON 字符串 `arguments`。模型层不执行工具；`Agent.run()` 仍返回最终答案字符串。
 
-```text
-[TOOL_CALL:calculate:{"input":"2+3*4"}]
-Action: calculate[{"input":"2+3*4"}]
+BasicAgent 和 ReActAgent 共用以下循环：
+
+1. 从注册表取得 `to_openai_tools()`，通过 `tools` 参数请求模型。
+2. 有调用时先保存 assistant 消息，按顺序解析参数、校验并执行工具。
+3. 每次调用都追加一条 `role="tool"` 消息，用 `tool_call_id` 与原请求配对，正文为 `ToolResult` JSON。
+4. 全部结果回传后再次请求模型；无工具调用且文本有效、正常结束时返回答案。
+
+参数错误、未知工具和执行错误均反馈结构化结果并占用轮次。调用 ID 缺失或同批重复、响应截断或拒绝、空响应会报错；不写入成功会话历史。多工具调用先顺序执行。服务不支持原生协议时直接报告失败。
+
+工具请求参数在每次 `invoke()` 时提供，不能作为 `MyLLM` 构造默认值或藏在 `extra_body` 中。Agent 的 `tools` 只能来自注册表。`tool_choice` 等单次 `run()` 参数会应用于该运行的每一轮，普通 Agent 使用默认自动选择；不要在希望模型自行结束的循环中持续强制调用工具。
+
+ReAct 的 `prompt_template` 现在是策略提示文本，与 `sys_prompt` 一起组成系统消息，不进行占位符格式化。用户问题和工具结果通过独立消息传递。`current_history` 是本次运行的消息字典列表，每次运行重建；长期 `_history` 继续只保存成功的用户问题和最终答案。
+
+`think()` / `run_using_stream()` 仅用于普通文本；不能传入工具参数，意外的工具调用增量会报错。
+
+#### 验证自定义计算器
+
+```bash
+python -B examples/single_qa.py --with-tools
+python -B examples/single_qa.py --live --with-tools "请使用计算器计算 2+3*4。"
+python -B examples/single_qa.py --live --with-tools --protocol-test "请计算 2+3*4。"
 ```
 
-分别用于 BasicAgent 和 ReActAgent；JSON 解码器识别完整对象，支持嵌套数组、跨行 JSON，以及字符串中的逗号和括号。解析失败反馈结构化参数错误，不猜测字段。错误和成功均以 ToolResult JSON 反馈给模型，错误同样占用交互轮次。
+带 `--with-tools` 的示例会包装并实际执行 `CalculatorTool.run()`，没有调用计算器就判定失败。`--protocol-test` 单独检查真实服务：首轮指定计算器，回传实际结果后恢复自动选择；需要服务支持指定工具。正常 Agent 示例不强制工具选择。
 
-**已完成：** 统一注册、参数模型、OpenAI 工具定义导出、统一执行结果、两种 Agent 接入和轮次耗尽停止。
+2026-10-01 验证：55 项离线测试通过；当前 `deepseek-flash` 的默认工具选择实际调用计算器一次，得到 14 并正常回答。指定工具协议检查返回 HTTP 400：`Thinking mode does not support this tool_choice`。因此当前模式请使用普通 `--live --with-tools` 示例；`--protocol-test` 需要服务支持指定工具，不会自动更改模型模式。联网验证临时移除了测试进程中的代理变量，项目环境配置未变更。
 
-**待实现：** 模型原生 `tool_calls` 的请求/返回处理及 `role="tool"` 消息配对、服务端严格 Schema 模式、独立工具总调用预算、详细运行记录、异步及流式工具循环。`run_using_stream()` 目前仍只处理普通文本；`MyLLM.invoke()` 仍返回文本，不能把 Schema 导出视为原生工具调用已接通。
+
+**已完成：** 原生请求与响应、调用 ID 配对、共享 Agent 循环、本地参数校验和实际计算器执行验证。
+
+**待实现：** 服务端严格 Schema 模式、独立工具总调用预算、用量与详细运行记录、统一重试预算、异步及流式工具循环。
 
 ### 工具离线演示
 

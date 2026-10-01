@@ -7,7 +7,7 @@ from unittest.mock import Mock
 from pydantic import Field, ValidationError
 
 from bpcagent import CalculatorTool, FunctionTool, Tool, ToolArgs, ToolError, ToolRegistry, ToolResult
-from bpcagent.exceptions import ToolException
+from bpcagent.agents.exceptions import ToolException
 
 
 class Options(ToolArgs):
@@ -135,8 +135,8 @@ class ToolTests(unittest.TestCase):
                 self.registry.register_function("bad", "错误签名", func, args_schema=ValuesArgs)
         self.assertEqual(self.registry.list_tools(), [])
 
-    def test_invalid_tool_name_and_reserved_action_name(self):
-        for name in ("", "a b", "a" * 65, "Finish"):
+    def test_invalid_tool_name(self):
+        for name in ("", "a b", "a" * 65):
             with self.subTest(name=name), self.assertRaises(ToolException):
                 self.registry.register_tool(EchoTool(name))
 

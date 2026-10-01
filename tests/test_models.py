@@ -5,8 +5,13 @@ import unittest
 import os
 from unittest.mock import patch
 
-from bpcagent import BasicAgent, Config, MyLLM
-from bpcagent.exceptions import ConfigException, LLMException
+from bpcagent import BasicAgent, Config, MyLLM, LLMResponse
+from bpcagent.agents.exceptions import ConfigException, LLMException
+
+
+def text_response():
+    return SimpleNamespace(choices=[SimpleNamespace(
+        message=SimpleNamespace(content="hello", tool_calls=None, refusal=None), finish_reason="stop")])
 
 
 class LLMTests(unittest.TestCase):
@@ -14,16 +19,15 @@ class LLMTests(unittest.TestCase):
         env = patch.dict(os.environ, {}, clear=True)
         env.start()
         self.addCleanup(env.stop)
-        patcher = patch("bpcagent.models.OpenAI")
+        patcher = patch("bpcagent.agents.models.OpenAI")
         self.client = patcher.start().return_value
+        self.client.chat.completions.create.return_value = text_response()
         self.addCleanup(patcher.stop)
         self.llm = MyLLM(model="test", api_key="test-key", base_url="https://example.invalid/v1")
 
     def test_invoke_returns_response_text(self):
-        self.client.chat.completions.create.return_value = SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(content="hello"))]
-        )
-        self.assertEqual(self.llm.invoke([{"role": "user", "content": "hi"}]), "hello")
+        self.assertEqual(self.llm.invoke([{"role": "user", "content": "hi"}]),
+                         LLMResponse(content="hello", finish_reason="stop"))
 
     def test_invoke_failure_raises_llm_exception(self):
         self.client.chat.completions.create.side_effect = RuntimeError("offline failure")
@@ -53,13 +57,14 @@ class LLMTests(unittest.TestCase):
             "LLM_MODEL_ID": "env-model", "LLM_API_KEY": "env-key",
             "LLM_BASE_URL": "https://example.invalid/v1", "TEMPERATURE": "0.1",
             "MAX_TOKENS": "100", "LLM_TIMEOUT": "90",
-        }), patch("bpcagent.models.OpenAI") as factory:
+        }), patch("bpcagent.agents.models.OpenAI") as factory:
             llm = MyLLM(config=Config(model="config-model", temperature=0.4),
                         model="explicit-model", api_key="explicit-key",
                         base_url="https://explicit.invalid/v1", temperature=0.3,
                         timeout=60, top_p=0.8)
             factory.assert_called_once_with(api_key="explicit-key",
                                             base_url="https://explicit.invalid/v1", timeout=60)
+            factory.return_value.chat.completions.create.return_value = text_response()
             llm.invoke([], temperature=0, timeout=10, top_p=0.5)
             options = factory.return_value.chat.completions.create.call_args.kwargs
             self.assertEqual(options, dict(messages=[], model="explicit-model", temperature=0,
@@ -114,11 +119,11 @@ class LLMTests(unittest.TestCase):
 
     def test_invalid_constructor_fails_before_client_creation(self):
         for options in ({"timeout": None}, {"timeout": 0}, {"stream": True}):
-            with self.subTest(options=options), patch("bpcagent.models.OpenAI") as factory:
+            with self.subTest(options=options), patch("bpcagent.agents.models.OpenAI") as factory:
                 with self.assertRaises(ConfigException):
                     MyLLM(config=self.llm.config, **options)
                 factory.assert_not_called()
-        with patch("bpcagent.models.OpenAI") as factory:
+        with patch("bpcagent.agents.models.OpenAI") as factory:
             with self.assertRaises(ConfigException):
                 MyLLM()
             factory.assert_not_called()

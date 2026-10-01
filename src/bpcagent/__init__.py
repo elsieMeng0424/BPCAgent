@@ -1,11 +1,7 @@
 """Public API for BPCAgent."""
 
-from .agents import Agent, BasicAgent, ReActAgent
-from .config import Config
-from .default_tools import CalculatorTool
-from .messages import Message
-from .models import MyLLM
-from .tools import FunctionTool, Tool, ToolArgs, ToolError, ToolRegistry, ToolResult
+from .agents import Agent, BasicAgent, ReActAgent, Config, LLMResponse, Message, ToolCall, MyLLM
+from .tools import CalculatorTool, FunctionTool, Tool, ToolArgs, ToolError, ToolRegistry, ToolResult
 
 __all__ = [
     "Agent",
@@ -13,6 +9,8 @@ __all__ = [
     "CalculatorTool",
     "Config",
     "Message",
+    "LLMResponse",
+    "ToolCall",
     "MyLLM",
     "ReActAgent",
     "Tool",

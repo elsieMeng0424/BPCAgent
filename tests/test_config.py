@@ -7,7 +7,7 @@ from unittest.mock import patch
 from pydantic import ValidationError
 
 from bpcagent import Config
-from bpcagent.exceptions import ConfigException
+from bpcagent.agents.exceptions import ConfigException
 
 
 class ConfigTests(unittest.TestCase):

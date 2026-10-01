@@ -5,7 +5,7 @@ import operator
 import math
 from pydantic import Field
 
-from .tools import Tool, ToolArgs
+from .tool import Tool, ToolArgs
 
 class CalculatorArgs(ToolArgs):
     """计算器的输入参数。"""

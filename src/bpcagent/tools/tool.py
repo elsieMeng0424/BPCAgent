@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from .exceptions import ToolException
+from ..agents.exceptions import ToolException
 
 
 class ToolArgs(BaseModel):
@@ -148,8 +148,6 @@ class ToolRegistry:
             raise ToolException("只能注册 Tool 对象")
         if not isinstance(tool.name, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", tool.name):
             raise ToolException("工具名称必须为 1 到 64 个字母、数字、下划线或连字符")
-        if tool.name == "Finish":
-            raise ToolException("Finish 是 ReAct 的完成动作名称，不能注册为工具")
         schema = getattr(tool, "args_schema", None)
         if not isinstance(schema, type) or not issubclass(schema, ToolArgs):
             raise ToolException("工具必须声明 ToolArgs 子类作为 args_schema")
@@ -189,7 +187,7 @@ class ToolRegistry:
         return [tool.to_openai_tool() for tool in self._tools.values()]
 
     def get_descriptions(self) -> str:
-        """文本 Agent 使用同一份工具定义，包含完整参数 Schema。"""
+        """返回工具定义的 JSON 文本，供展示和检查参数 Schema。"""
         return json.dumps(self.to_openai_tools(), ensure_ascii=False) if self._tools else "暂无可用工具"
 
     def execute_tool(self, name: str, arguments: dict[str, Any], *, call_id: str | None = None) -> ToolResult:

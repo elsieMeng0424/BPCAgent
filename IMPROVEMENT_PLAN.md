@@ -1,16 +1,17 @@
 # BPCAgent 框架改进计划
 
-更新日期：2026-09-29
+更新日期：2026-10-01
 状态：阶段 2「统一工具执行」已完成本地验收；阶段 1 已完成配置、轮次停止和空响应处理，独立工具总调用预算等仍待补齐。
 
-### 当前完成情况（2026-09-29）
+### 当前完成情况（2026-10-01）
 
 - 已完成：ToolArgs 参数模型、FunctionTool 包装、单一注册表、ToolResult 结果协议、重名显式替换和 JSON 返回值检查。
 - 已完成：Pydantic 生成 OpenAI Chat Completions 函数工具定义，使用 `type/function/name/description/parameters` 格式，明确 `strict=False`。
 - 已完成：BasicAgent/ReActAgent 共用执行入口；参数统一为 JSON 对象；嵌套参数和多行 JSON 正确解析。
 - 已完成：轮次耗尽立即抛出 AgentException，不再额外请求模型或保存成功历史；ReAct 系统提示词生效。
-- 验证：43 项离线单元测试通过；单次计算器问答和多参数工具执行示例通过。未请求真实模型。
-- 待完成：阶段 3 原生 tool_calls 与工具结果消息配对、服务端严格 Schema 适配；阶段 4 详细运行记录；阶段 5 异步和流式工具循环。
+- 验证：55 项离线测试通过；真实 deepseek-flash 自动工具调用实际执行 CalculatorTool 一次，结果 14 回传后正常回答。指定工具检查因当前 Thinking 模式不支持该 tool_choice 返回 HTTP 400；自动调用已通过。
+- 已完成：阶段 3 原生 tool_calls 与工具结果消息配对，两类 Agent 共用同步执行循环。
+- 待完成：服务端严格 Schema 适配、用量和重试预算；阶段 4 详细运行记录；阶段 5 异步和流式工具循环。
 - 待补齐的执行边界：模型轮次与工具实际执行总次数的独立预算；目前一轮可执行多个工具。
 - 下方“当前基础与主要问题”保留首次评估时的基线，当前进度以本节和阶段勾选项为准。
 
@@ -20,7 +21,7 @@
 
 本计划聚焦通用框架。近期先完善单个 Agent 的执行和工具调用，Workflow 编排放在基础接口稳定之后。
 
-- 保持当前单层模块结构，按职责扩展现有文件。
+- 按职责划分 agents 和 tools 两个包，优先扩展对应模块。
 - 每次只完成一组有明确验收标准的修改，避免同时重写所有模块。
 - 保留 `from bpcagent import ...` 的公开导入方式。
 - 普通问答继续支持 `agent.run(question) -> str`；详细执行结果通过新增接口提供。
@@ -35,15 +36,15 @@
 
 | 当前问题 | 代码位置 | 影响 |
 | --- | --- | --- |
-| Agent 保存了 `Config`，但模型设置和环境变量走另一条初始化路径；`max_history_length` 未生效 | [config.py](src/bpcagent/config.py)、[models.py](src/bpcagent/models.py)、[agents.py](src/bpcagent/agents.py) | 配置看似设置成功，运行行为却可能没有变化 |
-| BasicAgent 用正则截取工具调用，参数中的 `]`、数组和逗号可能破坏解析 | [agents.py](src/bpcagent/agents.py) | 模型提出了正确的工具请求，程序也可能解析错误 |
-| BasicAgent 直接调用 `Tool.run()`，ReActAgent 通过注册表执行；函数工具只在部分入口可用 | [agents.py](src/bpcagent/agents.py)、[tools.py](src/bpcagent/tools.py) | 相同工具在不同 Agent 中表现不一致 |
-| 工具参数定义没有完整执行必填项、默认值和类型校验；执行错误通常变成字符串 | [tools.py](src/bpcagent/tools.py) | 工具错误和成功结果难以区分 |
-| BasicAgent 达到工具轮次限制后，仍额外调用一次模型，并直接返回结果 | [agents.py](src/bpcagent/agents.py) | 可能将未执行的工具调用文本当作最终答案 |
-| ReActAgent 主要使用自己的提示词模板，没有使用传入的 `sys_prompt`；会话历史也未用于下一次请求 | [agents.py](src/bpcagent/agents.py) | 与基类接口给调用方的预期不一致 |
-| 模型接口主要返回文本，缺少工具请求、结束原因、用量等信息；构造器保存的 `kwargs` 未参与请求 | [models.py](src/bpcagent/models.py) | 难以实现统一的工具协议和执行统计 |
-| 历史只保存用户问题和最终答案，中间工具过程依靠 `print` 输出 | [agents.py](src/bpcagent/agents.py)、[messages.py](src/bpcagent/messages.py) | 错误定位和后续程序读取过程较困难 |
-| 流式入口只处理文本；目前没有异步 Agent 接口 | [agents.py](src/bpcagent/agents.py)、[models.py](src/bpcagent/models.py) | 后续服务化和并发执行需要补充运行语义 |
+| Agent 保存了 `Config`，但模型设置和环境变量走另一条初始化路径；`max_history_length` 未生效 | [config.py](src/bpcagent/agents/config.py)、[models.py](src/bpcagent/agents/models.py)、[agents.py](src/bpcagent/agents/agents.py) | 配置看似设置成功，运行行为却可能没有变化 |
+| BasicAgent 用正则截取工具调用，参数中的 `]`、数组和逗号可能破坏解析 | [agents.py](src/bpcagent/agents/agents.py) | 模型提出了正确的工具请求，程序也可能解析错误 |
+| BasicAgent 直接调用 `Tool.run()`，ReActAgent 通过注册表执行；函数工具只在部分入口可用 | [agents.py](src/bpcagent/agents/agents.py)、[tool.py](src/bpcagent/tools/tool.py) | 相同工具在不同 Agent 中表现不一致 |
+| 工具参数定义没有完整执行必填项、默认值和类型校验；执行错误通常变成字符串 | [tool.py](src/bpcagent/tools/tool.py) | 工具错误和成功结果难以区分 |
+| BasicAgent 达到工具轮次限制后，仍额外调用一次模型，并直接返回结果 | [agents.py](src/bpcagent/agents/agents.py) | 可能将未执行的工具调用文本当作最终答案 |
+| ReActAgent 主要使用自己的提示词模板，没有使用传入的 `sys_prompt`；会话历史也未用于下一次请求 | [agents.py](src/bpcagent/agents/agents.py) | 与基类接口给调用方的预期不一致 |
+| 模型接口主要返回文本，缺少工具请求、结束原因、用量等信息；构造器保存的 `kwargs` 未参与请求 | [models.py](src/bpcagent/agents/models.py) | 难以实现统一的工具协议和执行统计 |
+| 历史只保存用户问题和最终答案，中间工具过程依靠 `print` 输出 | [agents.py](src/bpcagent/agents/agents.py)、[messages.py](src/bpcagent/agents/messages.py) | 错误定位和后续程序读取过程较困难 |
+| 流式入口只处理文本；目前没有异步 Agent 接口 | [agents.py](src/bpcagent/agents/agents.py)、[models.py](src/bpcagent/agents/models.py) | 后续服务化和并发执行需要补充运行语义 |
 
 ## 3. 阶段顺序
 
@@ -121,8 +122,8 @@ P0 表示应优先完成的基础工作，P1 表示稳定开发所需能力，P2
 
 - `Tool.run` 接收已校验的参数模型；函数包装器按字段名传参，保留嵌套模型实例。
 - `to_openai_tools()` 导出 Chat Completions 工具定义；`strict=False` 与本地 Pydantic 严格类型校验相互独立。默认值和可省略字段保持本地语义。
-- 本阶段 Agent 使用文本调用外层格式，参数统一为 JSON 对象，并通过 JSON 解码器读取完整结构。原生服务工具调用留在阶段 3。
-- 官方文档入口在当前网络返回拒绝响应；格式核对依据本地 OpenAI SDK 的 FunctionDefinition 和 ChatCompletionFunctionToolParam 类型。未进行服务端兼容性验证。
+- Agent 通过原生 tool_calls 接收请求，JSON 解码后交给注册表校验和执行。
+- 已完成当前配置服务的原生自动工具调用验证；服务端严格 Schema 仍未验证。
 - BasicAgent 的交互轮次包含最终回答所在轮次，达到上限后无额外模型请求。错误反馈同样占用轮次。
 - `examples/tool_execution.py` 演示数组、嵌套对象、默认值、函数工具和失败结果。
 
@@ -130,14 +131,14 @@ P0 表示应优先完成的基础工作，P1 表示稳定开发所需能力，P2
 
 ### 修改任务
 
-- [ ] 在 `models.py` 定义统一模型响应，包含文本、工具调用列表、结束原因和用量。服务没有提供用量时保留未知值。
-- [ ] 在 `tools.py` 定义 `ToolCall`，包含调用 ID、工具名称和参数对象。
-- [ ] 支持模型服务提供的结构化工具调用，将其转换为框架统一的数据结构。
-- [ ] 扩展 `Message`，记录模型发起的工具请求及对应的工具结果，保留调用 ID。
-- [ ] 通过模型适配器完成服务格式转换，Agent 的执行循环只处理统一对象。
-- [ ] 对仅支持文本的服务提供显式兼容模式，并使用可靠的 JSON 解析方式。原有 `[TOOL_CALL:...]` 协议仅作为迁移适配入口。
-- [ ] 工具调用模式在配置中明确指定或按已知能力选择。服务请求失败时应暴露错误，不能随意切换协议并重复执行工具。
-- [ ] 将两种 Agent 共用的“模型请求—工具执行—结果反馈”逻辑提取为内部方法，保留各自的提示词策略。
+- [x] 在 `messages.py` 定义统一 `LLMResponse`，包含文本、工具调用列表和结束原因。
+- [ ] 补充用量信息；服务没有提供时保留未知值。
+- [x] 在 `messages.py` 定义 `ToolCall`，包含调用 ID、工具名称和原始 JSON 参数字符串；执行前解析为对象。
+- [x] 支持模型服务提供的结构化工具调用，将其转换为框架统一的数据结构。
+- [x] 扩展 `Message`，记录模型发起的工具请求及对应的工具结果，保留调用 ID。
+- [x] 通过模型适配器完成服务格式转换，Agent 的执行循环只处理统一对象。
+- [x] 统一使用原生工具协议；工具参数解析错误反馈模型，服务不支持时暴露错误。
+- [x] 将两种 Agent 共用的“模型请求—工具执行—结果反馈”逻辑提取为内部方法，保留各自的提示词策略。
 - [ ] 明确模型重试策略，统一 SDK 和框架的重试预算。参数错误、鉴权错误不自动重试；有外部副作用的工具不能因模型失败而被盲目重放。
 
 ### 验收标准
@@ -145,7 +146,7 @@ P0 表示应优先完成的基础工作，P1 表示稳定开发所需能力，P2
 - 模型只有工具请求、没有文本内容时，Agent 仍能正常继续执行。
 - 同一轮出现多个工具请求时，每个结果都能准确关联到原调用。
 - 工具调用可完成两轮以上的连续交互，并正确结束。
-- 不支持结构化工具调用的服务，可通过明确配置使用文本兼容模式。
+- 不支持结构化工具调用的服务明确报错，不自动切换协议。
 - 模拟服务错误时，模型和工具的实际调用次数符合重试预算。
 
 ## 7. 阶段 4：历史、执行结果和日志

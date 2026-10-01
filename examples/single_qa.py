@@ -43,14 +43,14 @@ def main() -> int:
         parser.error("--protocol-test 需要同时使用 --live --with-tools")
 
     try:
+        llm = None
         if args.live:
             try:
                 from dotenv import load_dotenv
             except ImportError:
                 parser.error('真实模型示例需要先执行：python -m pip install -r requirements.txt')
             load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
-            config = Config.resolve()
-            llm = MyLLM(config=config)
+            config = Config()
         else:
             print("离线演示：模型响应为预设结构化响应，工具调用模式会实际执行计算器。")
             config = Config.resolve(environ={})
@@ -80,7 +80,7 @@ def main() -> int:
         if args.with_tools:
             # 只在示例中检查真实执行；生产工具及 Agent 不增加测试追踪字段。
             with patch.object(calculator, "run", wraps=calculator.run) as execution:
-                answer = (run_protocol_test(llm, registry, args.question) if args.protocol_test
+                answer = (run_protocol_test(agent.llm, registry, args.question) if args.protocol_test
                           else agent.run(args.question))
                 if execution.call_count == 0:
                     raise AgentException("验证失败：模型未实际调用计算器，直接回答不算通过")

@@ -1,6 +1,7 @@
 """Offline checks for conversation history and real tool execution."""
 
 from copy import deepcopy
+from types import SimpleNamespace
 import unittest
 import json
 import os
@@ -169,10 +170,45 @@ class AgentTests(unittest.TestCase):
         with patch("bpcagent.agents.models.OpenAI"):
             llm = MyLLM(model="test", api_key="test-key", base_url="https://example.invalid", temperature=0.2)
         original = llm.config
-        agent = BasicAgent("test", llm, config=Config(temperature=0.9))
+        with patch("bpcagent.agents.agents.MyLLM") as factory:
+            agent = BasicAgent("test", llm, config=Config(temperature=0.9))
+            factory.assert_not_called()
         self.assertEqual(agent.config.temperature, 0.9)
         self.assertIs(llm.config, original)
         self.assertEqual(llm.config.temperature, 0.2)
+
+    def test_basic_agent_creates_model_from_config_once(self):
+        for config in (None, Config(temperature=0.3, max_tool_iterations=2)):
+            with self.subTest(config=config), patch.dict(os.environ, {
+                "LLM_MODEL_ID": "env-model", "LLM_API_KEY": "test-key",
+                "LLM_BASE_URL": "https://example.invalid/v1", "TEMPERATURE": "0.2",
+            }), patch("bpcagent.agents.models.OpenAI") as factory, \
+                    patch.object(Config, "resolve", wraps=Config.resolve) as resolve:
+                agent = BasicAgent("test", config=config)
+                resolve.assert_called_once_with(config, overrides={})
+                factory.assert_called_once_with(api_key="test-key",
+                    base_url="https://example.invalid/v1", timeout=120)
+                factory.return_value.chat.completions.create.assert_not_called()
+                self.assertIsInstance(agent.llm, MyLLM)
+                self.assertIs(agent.config, agent.llm.config)
+                self.assertEqual(agent.llm.model, "env-model")
+                self.assertEqual(agent.config.temperature, 0.3 if config is not None else 0.2)
+                if config is not None:
+                    self.assertEqual(agent.config.max_tool_iterations, 2)
+                    self.assertIsNone(config.model)
+                factory.return_value.chat.completions.create.return_value = SimpleNamespace(
+                    choices=[SimpleNamespace(message=SimpleNamespace(content="你好", tool_calls=None),
+                                             finish_reason="stop")])
+                self.assertEqual(agent.run("hello", temperature=0.1), "你好")
+                request = factory.return_value.chat.completions.create.call_args.kwargs
+                self.assertEqual(request["temperature"], 0.1)
+                self.assertEqual(agent.config.temperature, 0.3 if config is not None else 0.2)
+
+    def test_basic_agent_requires_model_settings_before_sdk_creation(self):
+        with patch("bpcagent.agents.models.OpenAI") as factory:
+            with self.assertRaises(ConfigException):
+                BasicAgent("test", config=Config())
+            factory.assert_not_called()
 
     def test_both_agents_execute_objects_and_functions_through_registry(self):
         arguments = {"texts": ['a,b] {嵌套文本}', '引号"与括号[ ]'], "options": {"input": "nested"}}

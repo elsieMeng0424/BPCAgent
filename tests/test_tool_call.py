@@ -53,7 +53,7 @@ class NativeToolTests(unittest.TestCase):
                     return sdk_response("结果是 14。", reason="stop")
 
                 self.client.chat.completions.create.side_effect = create
-                agent = cls("calculator", self.llm, config=self.config, tool_registry=registry)
+                agent = cls("calculator", config=self.config, tool_registry=registry)
                 self.assertEqual(agent.run("计算 2+3*4"), "结果是 14。")
                 calculator.run.assert_called_once()
                 self.assertEqual(calculator.run.call_args.args[0].input, "2+3*4")

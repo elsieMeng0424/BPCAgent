@@ -8,7 +8,7 @@ BPCAgent 已实现一个同步 Agent 开发框架：统一解析配置，通过 
 
 核心职责分为三层：**模型客户端负责请求与响应转换，Agent 负责运行循环，工具注册表负责校验与执行。** 两类 Agent 使用同一工具循环，主要差异是提示策略和历史使用方式。目前尚未实现多智能体调度、Workflow 编排、异步工具循环和独立工具总次数预算。
 
-本报告依据当前工作区文件编写，包含尚未提交的修改；不以历史改进计划代替实际实现。编写时重新运行了 55 项离线测试，全部通过。真实服务验证引用此前已记录的结果，本次未重新请求模型。图示使用 Mermaid，可在支持 Mermaid 的 Markdown 阅读器中查看。
+本报告依据当前工作区文件编写，包含尚未提交的修改；不以历史改进计划代替实际实现。编写时重新运行了 57 项离线测试，全部通过。真实服务验证引用此前已记录的结果，本次未重新请求模型。图示使用 Mermaid，可在支持 Mermaid 的 Markdown 阅读器中查看。
 
 ### 阅读顺序
 
@@ -235,7 +235,7 @@ flowchart TD
 
 | 重要类 | 核心职责 |
 | --- | --- |
-| `Agent` | 抽象基类；保存模型、配置和会话历史，提供响应检查、工具执行和共享循环 |
+| `Agent` | 抽象基类；默认按 Config 创建模型并复用其配置，保存历史，提供响应检查、工具执行和共享循环 |
 | `BasicAgent` | 创建 system、历史和 user 消息；提供普通问答、工具循环和文本流入口 |
 | `ReActAgent` | 将策略提示与系统提示组合；每次重新建立运行消息，使用共享工具循环 |
 
@@ -429,21 +429,23 @@ sequenceDiagram
     participant T as CalculatorTool
     participant A as Agent
     App->>Env: 可选 load_dotenv，已有环境优先
-    App->>C: resolve()
-    C->>Env: 读取映射字段
-    C-->>App: 校验后的配置快照
-    App->>M: MyLLM(config)
-    M->>C: 合并显式覆盖并检查连接字段
-    Note over M: 创建 SDK 客户端，此时不请求模型
+    App->>C: 构造 Config，设置显式字段
+    C-->>App: 未合并环境的配置对象
     App->>T: 创建计算器实例
     App->>R: register_tool(T)
     R->>T: 检查参数模型并生成 Schema
-    App->>A: 传入 llm、config、registry
-    A->>C: 解析 Agent 执行配置
-    Note over A,M: Agent 不用自身 Config 改写已传入模型实例
+    App->>A: 传入 config、registry
+    A->>M: 自动创建 MyLLM(config)
+    M->>C: resolve(config)，合并并校验配置
+    C->>Env: 读取映射字段
+    C-->>M: 完整配置快照
+    Note over M: 检查连接字段并创建 SDK 客户端，不请求模型
+    M-->>A: 模型实例与配置快照
+    Note over A,M: BasicAgent 与模型复用同一配置对象
+
 ```
 
-模型配置和 Agent 配置可以来自同一个快照，但分别由各自对象使用。仅向 Agent 传入新的 `temperature`，不会修改已有 `MyLLM` 的温度。
+默认路径只需创建 Agent；`MyLLM` 完成一次配置解析，BasicAgent 复用其快照。不传 Config 时使用环境变量与默认值。测试或自定义模型可以显式传入 `llm`，此时不自动创建模型，Agent 单独解析执行配置，不改写已有模型。ReAct 仅同步可选 llm 接口；其显式 max_steps 仍在构造时覆盖 Agent 执行配置。
 
 ### 3.2 阶段 B：用户输入到第一次模型响应
 
@@ -578,7 +580,7 @@ flowchart TD
 flowchart TD
     Q["single_qa.py"] --> Mode{"入口模式"}
     Mode -->|离线| Mock["预设 LLMResponse"]
-    Mode -->|live| Real["加载配置并创建 MyLLM"]
+    Mode -->|live| Real["加载环境与 Config；创建 Agent 时自动创建 MyLLM"]
     Mock --> A["BasicAgent.run"]
     Real --> Choice{"protocol-test？"}
     Choice -->|否| A
@@ -633,17 +635,17 @@ flowchart TD
 
 ### 5.1 本次重新执行的离线测试
 
-在现有 Conda 环境执行 `unittest` 测试发现，结果为 **55 项测试通过**。测试数量按测试方法计，部分方法内部包含多个子用例。
+在现有 Conda 环境执行 `unittest` 测试发现，结果为 **57 项测试通过**。测试数量按测试方法计，部分方法内部包含多个子用例。
 
 | 测试文件 | 数量 | 主要覆盖 |
 | --- | ---: | --- |
 | [test_config.py](tests/test_config.py) | 7 | 配置来源优先级、范围、快照、密钥展示 |
 | [test_messages.py](tests/test_messages.py) | 3 | 消息序列化、角色约束、调用 ID |
 | [test_models.py](tests/test_models.py) | 9 | 请求参数、模型返回、流式文本及异常 |
-| [test_agents.py](tests/test_agents.py) | 17 | 两类 Agent、历史、多调用、连续工具轮次、错误反馈与预算 |
+| [test_agents.py](tests/test_agents.py) | 19 | 两类 Agent、历史、多调用、连续工具轮次、错误反馈与预算 |
 | [test_tools.py](tests/test_tools.py) | 12 | 注册、函数包装、Schema、严格校验、结果序列化及计算器 |
 | [test_tool_call.py](tests/test_tool_call.py) | 7 | 模拟 SDK 与真实本地计算器的整链路、协议错误、空流和提示策略 |
-| **合计** | **55** | **离线通过，不代表全部边界或所有供应商均已覆盖** |
+| **合计** | **57** | **离线通过，不代表全部边界或所有供应商均已覆盖** |
 
 复现命令：
 

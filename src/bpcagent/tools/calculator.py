@@ -54,7 +54,6 @@ class CalculatorTool(Tool[CalculatorArgs]):
     
     def run(self, parameters: CalculatorArgs) -> int | float:
         """返回计算数值，非法表达式和执行错误由注册表统一处理。"""
-        print(f"正在执行计算器工具哦～～～～")
         node = ast.parse(parameters.input, mode="eval")
         result = self._eval_node(node.body)
         if type(result) not in (int, float):

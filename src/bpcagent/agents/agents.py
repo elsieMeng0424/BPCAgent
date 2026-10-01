@@ -45,14 +45,20 @@ class Agent(ABC):
     def __init__(
         self, 
         name: str, 
-        llm: MyLLM, 
+        llm: Optional[MyLLM] = None,
         sys_prompt: Optional[str] = None, 
         config: Optional[Config] = None    
     ):
+        """默认根据 config 创建模型；显式 llm 用于模拟或自定义模型。"""
         self.name = name
-        self.llm = llm
         self.sys_prompt = sys_prompt
-        self.config = Config.resolve(config)
+        if llm is None:
+            self.llm = MyLLM(config=config)
+            # 模型已完成配置解析，Agent 复用同一快照。
+            self.config = self.llm.config
+        else:
+            self.llm = llm
+            self.config = Config.resolve(config)
         self._history: list[Message] = []
 
     @abstractmethod
@@ -108,7 +114,8 @@ class Agent(ABC):
         options = {**kwargs, "tools": tools} if tools else kwargs
         for _ in range(max_tool_iterations):
             response = self._invoke_response(messages, **options)
-            print(response.content if not response.tool_calls else response)
+            # record
+            # print(response.content if not response.tool_calls else response)
             if not response.tool_calls:
                 messages.append(Message(response.content, "assistant").to_dict())
                 self.add_message(Message(input, "user"))
@@ -135,14 +142,14 @@ class BasicAgent(Agent):
     def __init__(
         self, 
         name: str,
-        llm: MyLLM,
+        llm: Optional[MyLLM] = None,
         sys_prompt: Optional[str] = None,
         config: Optional[Config] = None,
         tool_registry: Optional['ToolRegistry'] = None,
         enable_tool_calling: bool = True
     ):
         """
-        初始化BasicAgent
+        根据配置初始化 BasicAgent，默认自动创建模型。
         """
         super().__init__(name, llm, sys_prompt, config)
         self.tool_registry = tool_registry
@@ -170,9 +177,6 @@ class BasicAgent(Agent):
 
         # 添加当前用户消息
         messages.append({"role": "user", "content": input})
-
-        # record
-        print(messages)
 
         # 普通问答与工具调用共用响应检查和成功历史写入逻辑。
         return self._run_with_tools(messages, input, max_tool_iterations, **kwargs)
@@ -255,7 +259,7 @@ class ReActAgent(Agent):
     def __init__(
         self, 
         name: str,
-        llm: MyLLM,
+        llm: Optional[MyLLM] = None,
         sys_prompt: Optional[str] = None,
         config: Optional[Config] = None,
         tool_registry: Optional[ToolRegistry] = None,

@@ -95,17 +95,15 @@ python examples/single_qa.py --live --with-tools "请使用计算器计算 2+3*4
 配置好环境变量后，可以创建智能体并注册工具：
 
 ```python
-from bpcagent import BasicAgent, CalculatorTool, Config, MyLLM, ToolRegistry
+from bpcagent import BasicAgent, CalculatorTool, Config, ToolRegistry
 
-config = Config.resolve()
-llm = MyLLM(config=config)
+config = Config()  # 可在这里设置 temperature、max_tool_iterations 等
 
 registry = ToolRegistry()
 registry.register_tool(CalculatorTool())
 
 agent = BasicAgent(
     name="Assistant",
-    llm=llm,
     config=config,
     sys_prompt="你是一个简洁的助手，计算问题请调用工具。",
     tool_registry=registry,
@@ -175,7 +173,11 @@ updated = Config.resolve(config, overrides={"max_steps": 8}, environ={})
 
 ### Agent 与模型如何共享配置
 
-将同一个已解析的 `config` 分别传入 `MyLLM(config=config)` 和 `BasicAgent(..., config=config)`，如上方示例所示。Agent 使用自己的执行设置，已有模型实例继续使用创建它时的模型设置；仅向 Agent 传入 `Config(temperature=...)` 不会重新配置已有模型。
+默认使用 `BasicAgent(name="Assistant", config=config)`。Agent 内部创建 `MyLLM(config=config)`，由模型解析环境变量与显式配置，随后 Agent 复用同一份配置快照。初始化阶段只创建客户端，调用 `run()` 时才请求模型。也可以省略 `config`，直接从环境变量与默认值创建模型。
+
+连接字段需显式设置或存在于进程环境中；`.env` 仍由应用入口加载。离线测试可显式传入 `llm=模拟模型`，此时不会创建真实客户端。传入已有模型时，模型配置保持不变，Agent 的执行配置单独解析。
+
+本次初始化调整的 57 项离线测试通过，覆盖配置解析一次、配置快照共享、单次请求覆盖、无模型配置时提前报错，以及自动创建模型后的真实本地计算器执行。
 
 - `BasicAgent.run(..., max_tool_iterations=2)` 可覆盖本次工具迭代上限，不改变 Agent 默认值。
 - `ReActAgent(..., max_steps=8)` 可覆盖构造时的步数设置。

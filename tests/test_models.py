@@ -39,6 +39,34 @@ class LLMTests(unittest.TestCase):
         self.assertEqual(self.llm.invoke([{"role": "user", "content": "hi"}]),
                          LLMResponse(content="hello", finish_reason="stop"))
 
+    def test_context_budget_includes_constructor_response_schema(self):
+        llm = LLM(model="test", api_key="test-key", base_url="https://example.invalid/v1",
+                  response_format={"type": "json_schema", "json_schema": {"description": "x" * 20000}})
+        agent = BasicAgent("test", llm=llm, config=Config(context={"enabled": True, "max_input_tokens": 6000}))
+        result = agent.run("short request")
+        self.assertFalse(result.finished)
+        self.assertEqual(result.info["stop_reason"], "context_budget_exceeded")
+        self.client.chat.completions.create.assert_not_called()
+
+    def test_context_uses_actual_llm_output_limit_and_does_not_send_local_policy(self):
+        llm = LLM(model="test", api_key="test-key", base_url="https://example.invalid/v1", max_tokens=12000)
+        config = Config(context={"enabled": True, "context_window": 24000, "safety_margin_tokens": 1000})
+        agent = BasicAgent("test", llm=llm, config=config)
+        self.assertTrue(agent.run("hello").finished)
+        self.assertEqual(agent.context_manager.events[-1]["input_budget"], 11000)
+        sent = self.client.chat.completions.create.call_args.kwargs
+        self.assertEqual(sent["max_tokens"], 12000)
+        self.assertNotIn("context", sent)
+        self.assertNotIn("context_window", sent)
+
+    def test_context_rejects_nested_output_limit_bypass(self):
+        for limit in (None, 20000):
+            with self.subTest(limit=limit):
+                agent = BasicAgent("test", llm=self.llm, config=Config(context={"enabled": True}))
+                with self.assertRaisesRegex(ConfigException, "not in extra_body"):
+                    agent.run("hi", extra_body={"max_tokens": limit})
+        self.client.chat.completions.create.assert_not_called()
+
     def test_invoke_preserves_optional_reasoning(self):
         for reasoning in (None, "", "先检查工具结果。\n再回答。"):
             with self.subTest(reasoning=reasoning):

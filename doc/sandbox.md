@@ -1,6 +1,6 @@
 # Docker sandbox
 
-`SandboxShellTool` exposes the existing `run_shell(command)` action but runs each command in a new restricted local Linux container. Only task files persist between calls. The unified workflow `PatientStateAgent` does not automatically enable this sandbox; the advanced `UnitPatientStateAgent` opts into it through `sandbox_config`. Omitting that configuration retains local Shell execution. A configured sandbox never falls back to host execution.
+`SandboxShellTool` exposes the existing `run_shell(command)` action but runs each command in a new restricted local Linux container. Only task files persist between calls. The unified workflow `PatientStateAgent` now uses this sandbox by default through `patient_shell`; startup is lazy until the model calls Shell. See [patient-stage input and configuration](patient-request.md). The separate advanced `UnitPatientStateAgent` opts into it through `sandbox_config`; omitting that advanced configuration retains local Shell execution. A configured sandbox never falls back to host execution.
 
 ## Prepare the image
 
@@ -72,4 +72,4 @@ BPC_RUN_DOCKER_TESTS=1 python -B -m unittest discover -s tests -p test_sandbox_i
 
 When enabled, unavailable Docker or image is a test failure, not a silent skip. Tests cover RO/RW mounts, non-root/capability settings, disabled network and rootfs writes, persistence, other-task invisibility, timeout/background cleanup, output truncation, memory exhaustion, soft disk guards, and a full synthetic extraction/normalization/repair workflow. They never invoke a real model or load the patient dataset.
 
-Not included in this first version: persistent per-task containers, remote execution, automatic image builds, hard disk quotas, automatic recovery after host/daemon crashes, Windows hosts, and merging the demo into PatientStateAgent.
+Not included: persistent per-task containers, remote execution, automatic image builds, hard disk quotas, automatic recovery after host/daemon crashes, Windows hosts, and automatically applying advanced unit corrections to workflow snapshots.

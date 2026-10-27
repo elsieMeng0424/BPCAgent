@@ -58,7 +58,11 @@ Meta 不执行，源码和配置只保留注释接入点；不要求其 API key�
 
 ## 安装与最小例子
 
-需要 Python 3.10+。BPCStateExtractor 提供的 `bpc_state` **0.3.0 / Schema 1.2**
+Natural-language input is supported via `workflow.run("病人051542前220天的病例")`
+or CLI `--request`. PatientStateAgent has a real extractor and optional real Shell;
+see [request resolution and tool behavior](patient-request.md).
+
+需要 Python 3.10+。BPCStateExtractor 提供的 `bpc_state_extractor` **0.3.0 / Schema 1.2**
 已内置到 `vendor/BPCStateExtractor/`，与 BPCAgent 一次安装；数据集仍单独配置。
 提取器尚未作为本项目依赖发布到包索引，需显式安装本地项目：
 
@@ -106,14 +110,14 @@ workspace/YYYY-MM-DD/run_<uuid>/
   workflow_plan.json             # 本次运行固定的计划；默认重试预算另存于 request.json
   patient_state.json             # 原始 Schema 1.2，可与离线评估哈希匹配
   shared_patient_state.json      # 原始状态、近期视图、单位转换、完整性检查
-  01_PatientStateAgent/
+  001_PatientStateAgent/
     patient_state_day_<cutoff>_001.json
     patient_evidence_day_<cutoff>_002.json # 可分批查询，序号递增
     context.json
     transcript.json             # 包含实际模型响应和工具结果
     output.json
-  02_ReviewAgent/...
-  03_TargetSelectionAgent/...    # 若首阶段被拒绝，则这里是 03_PatientStateAgent
+  002_ReviewAgent/...
+  003_TargetSelectionAgent/...    # 若首阶段被拒绝，则这里是 003_PatientStateAgent
   ...
   workflow_result.json           # 完成状态、全部阶段反馈、接受的输出
 ```
@@ -182,7 +186,8 @@ OpenAI 推理工具调用走 Responses，兼容服务商可配置 Chat Completio
 | 单位整理 | 复用上游换算函数；PSA 的明确 ng/mL、ug/L 统一为 ng/mL；明确总/游离睾酮的 ng/dL 保留；歧义项标记待核验 |
 | search、pathway_graph、graph_ranking | 占位；KEGG/PINDER/BioGRID/指南尚未加载 |
 | drug_catalog、dock、ept_meet、drug_metrics | 占位；FDA 药物与计算评分尚未接入 |
-| bash | 占位，不执行模型给出的 shell 命令 |
+| PatientStateAgent / run_shell | Real Shell; cutoff-bound input export, default Docker isolation; diagnostic output does not update shared facts |
+| Target/Drug / bash | Placeholder; does not execute commands |
 | ReviewAgent | Demo 为流程验证；Live 为独立模型复核，输出 proceed/revise/block |
 | MetaAgent / rsi_evaluate | 不运行；保留类及占位工具，调用入口注释；自动实验、评分、应用尚未实现 |
 
@@ -203,15 +208,18 @@ Review 模型和时间隔离规则不应成为优化对象。
 
 ```bash
 mkdir -p offline_evaluation
-.venv/bin/bpc-state --data-dir ../bpc-patient-state/dataset evaluation \
+.venv/bin/bpc_state_extractor --data-dir ../bpc-patient-state/dataset evaluation \
   --patient-id GENIE-DFCI-051542 --cutoff-day 249 --end-day 339 \
   --output offline_evaluation/GENIE-DFCI-051542-after-249.json
 ```
 
 用 `meta.input_state_sha256` 与工作流 `patient_state_sha256` 连接输入和评估文件。
 当前离线导出器包含后续影像、门诊、肿瘤标志物，尚不包含用于药物 Hit@K 的
-未来新用药标签。目录分离和工具绑定不是操作系统沙箱；以后接入真正 bash 时
-必须限制其文件访问，不能暴露原始未来记录或离线评估目录。
+未来新用药标签。
+The patient-stage Shell now defaults to Docker isolation and mounts only bounded
+exports, not raw records or the offline evaluation directory. Directory separation
+alone is not a security boundary; explicitly enabled local Shell cannot guarantee
+cutoff isolation. See [patient Shell safety](patient-request.md).
 
 ## 指南和药物数据库从哪里获取
 

@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from bpc_state import BPCStateExtractor, BoundedPatientTool
-from bpc_state.cli import build_parser, main
-from bpc_state.evaluation import OfflineEvaluationExporter, state_sha256
-from bpc_state.models import EvaluationData, PatientState
-from bpc_state.tool_schema import evidence_tool_schema, state_tool_schema
+from bpc_state_extractor import BPCStateExtractor, BoundedPatientTool
+from bpc_state_extractor.cli import build_parser, main
+from bpc_state_extractor.evaluation import OfflineEvaluationExporter, state_sha256
+from bpc_state_extractor.models import EvaluationData, PatientState
+from bpc_state_extractor.tool_schema import evidence_tool_schema, state_tool_schema
 
 
 def test_evaluation_window_is_exclusive_of_input_and_inclusive_of_end(

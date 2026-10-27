@@ -4,12 +4,15 @@ import io
 import json
 from contextlib import redirect_stdout
 from importlib.resources import files
+from importlib.metadata import distribution
 from pathlib import Path
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 import unittest
 
-import bpc_state
-from bpc_state.rules import RuleSet
+import bpc_state_extractor
+from bpc_state_extractor.rules import RuleSet
 
 from bpcagent import Config
 from bpcagent.tools.bpc_patient import create_patient_tools
@@ -32,12 +35,25 @@ class BundledPatientStateTests(unittest.TestCase):
     def test_bundled_package_and_default_rules(self):
         # Editable installs must not silently resolve the old sibling checkout.
         repository = Path(__file__).resolve().parents[1]
-        source = Path(bpc_state.__file__).resolve()
+        source = Path(bpc_state_extractor.__file__).resolve()
         if "site-packages" not in source.parts:
             self.assertTrue(source.is_relative_to(repository / "vendor" / "BPCStateExtractor"), source)
-        self.assertEqual(bpc_state.__version__, "0.3.0")
-        rules = json.loads(files("bpc_state.resources").joinpath("field_rules.json").read_text())
+        self.assertEqual(bpc_state_extractor.__version__, "0.3.0")
+        rules = json.loads(files("bpc_state_extractor.resources").joinpath("field_rules.json").read_text())
         self.assertEqual(RuleSet().config, rules)
+
+    def test_renamed_cli_entry_point_and_schema(self):
+        scripts = {entry.name: entry for entry in distribution("bpcagent").entry_points
+                   if entry.group == "console_scripts"}
+        self.assertNotIn("bpc-state", scripts)
+        entry = scripts["bpc_state_extractor"]
+        self.assertEqual(entry.value, "bpc_state_extractor.cli:main")
+        self.assertTrue(callable(entry.load()))
+        process = subprocess.run(
+            [sys.executable, "-m", "bpc_state_extractor.cli", "schema"],
+            capture_output=True, text=True, check=True,
+        )
+        self.assertEqual(json.loads(process.stdout)["title"], "PatientState")
 
     def test_factory_uses_bundled_extractor_without_external_rules(self):
         state_tool, evidence_tool = create_patient_tools(
@@ -66,7 +82,7 @@ class BundledPatientStateTests(unittest.TestCase):
             for extra in ({"cutoff_day": 200}, {"patient_id": "P2"}, {"data_dir": "/tmp"}):
                 rejected = registry.execute_tool("get_patient_evidence", {"evidence_refs": [ref], **extra})
                 self.assertEqual(rejected.error.code, "invalid_arguments")
-            later = bpc_state.BPCStateExtractor(self.data).get_patient_state("P1", 150)
+            later = bpc_state_extractor.BPCStateExtractor(self.data).get_patient_state("P1", 150)
             future_refs = set(later["evidence_refs"]) - set(state["evidence_refs"])
             self.assertTrue(future_refs)
             rejected = registry.execute_tool("get_patient_evidence", {"evidence_refs": [next(iter(future_refs))]})

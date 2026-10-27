@@ -7,7 +7,19 @@
       "temperature": null,
       "max_tokens": 8192, // 每次模型请求的输出上限，包含思考 token
       "timeout": 180,
-      "max_tool_iterations": 12
+      "max_tool_iterations": 12,
+      "context": {
+        "enabled": true, // false disables request budgeting and compaction
+        "context_window": null, // Set the verified model context size; null means unknown, not unlimited
+        "gateway_context_window": null, // Optional smaller route-specific context size
+        "max_input_tokens": 32000, // Project input cap; conservative UTF-8 byte estimation, not exact tokenization
+        "reserve_output_tokens": 8192, // Actual larger max_tokens overrides increase the reservation
+        "safety_margin_tokens": 2048,
+        "trigger_ratio": 0.75, // Start compaction above this fraction of usable input budget
+        "target_ratio": 0.55, // Best-effort target; must be smaller than trigger_ratio
+        "keep_recent_messages": 4, // Prefer older outputs; huge recent tool results may still be archived
+        "min_compact_chars": 2000 // Smaller outputs are left intact
+      }
     },
     "deepseek_pro_low": {
       "provider": "deepseek", // Review 也用 DeepSeek，但使用不同模型 ID
@@ -16,7 +28,8 @@
       "temperature": null,
       "max_tokens": 8192,
       "timeout": 180,
-      "max_tool_iterations": 12
+      "max_tool_iterations": 12,
+      "context": {"enabled": true, "context_window": null, "max_input_tokens": 32000} // Same defaults; set verified model/route limits when known
     },
     "astra_medium": {
       "provider": "openai", // 可选："openai" | "claude" | "deepseek" | "gateway"
@@ -25,7 +38,8 @@
       "temperature": null, // null 不发送；或非负数（范围依模型）；开启非 none 推理时不发送采样参数
       "max_tokens": null, // null 使用服务默认；或正整数（输出 token 上限，需符合模型限制）
       "timeout": 180, // 大于 0，单位秒：单次模型请求超时
-      "max_tool_iterations": 10 // 正整数：单次 Agent 调用的最大模型/工具循环轮数
+      "max_tool_iterations": 10, // 正整数：单次 Agent 调用的最大模型/工具循环轮数
+      "context": {"enabled": true, "context_window": null, "max_input_tokens": 32000} // Local cap, not a claim about this model's capacity
     },
     "sol_medium": {
       "provider": "openai", // 可选："openai" | "claude" | "deepseek" | "gateway"
@@ -34,7 +48,8 @@
       "temperature": null, // null 或模型支持的非负数；推理模式的限制同上
       "max_tokens": null, // null 或正整数
       "timeout": 180, // 大于 0，单位秒
-      "max_tool_iterations": 10 // 正整数
+      "max_tool_iterations": 10, // 正整数
+      "context": {"enabled": true, "context_window": null, "max_input_tokens": 32000} // Local cap; verified model/route limits can further reduce it
     }
   }
 }

@@ -12,7 +12,7 @@ from pydantic import Field, create_model
 from .tool import Tool, ToolArgs
 
 if TYPE_CHECKING:
-    from bpc_state import BoundedPatientTool
+    from bpc_state_extractor import BoundedPatientTool
 
 
 class StateArgs(ToolArgs):
@@ -112,11 +112,11 @@ def create_patient_tools(
 ) -> tuple[PatientStateTool, PatientEvidenceTool]:
     """创建共享提取器、患者绑定和保存器的两个工具。
 
-    bpc_state 随 BPCAgent 一并安装，不依赖外部项目的源码路径。
+    bpc_state_extractor 随 BPCAgent 一并安装，不依赖外部项目的源码路径。
     工作目录由调用方按任务隔离；规则路径省略时使用内置默认资源。
     函数不读取环境文件，也不提供未来评估数据工具。
     """
-    from bpc_state import BPCStateExtractor, BoundedPatientTool
+    from bpc_state_extractor import BPCStateExtractor, BoundedPatientTool
 
     extractor = BPCStateExtractor(data_dir, rules_path=rules_path)
     bound = BoundedPatientTool(extractor, patient_id, max_cutoff_day, cancer_id)

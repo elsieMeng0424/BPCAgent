@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from bpc_state import BPCStateExtractor
-from bpc_state.models import PatientState
-from bpc_state.semantics import source_status
+from bpc_state_extractor import BPCStateExtractor
+from bpc_state_extractor.models import PatientState
+from bpc_state_extractor.semantics import source_status
 
 
 @pytest.mark.parametrize(

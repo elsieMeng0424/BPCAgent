@@ -36,6 +36,26 @@ class WorkflowIterationTests(unittest.TestCase):
     def workflow(self, **options):
         return AgentWorkflow(data_dir=self.data, workspace_root=self.root / "runs", **options)
 
+    def test_factory_creates_one_fresh_model_per_turn_including_retry(self):
+        models = []
+
+        def factory(role):
+            model = AlteredDemo(role, disposition="revise" if len(models) == 1 else None)
+            models.append(model)
+            return model
+
+        result = self.workflow(llm_factory=factory).run(patient_id="P1", cutoff_day=50)
+        self.assertTrue(result["finished"])
+        self.assertEqual(len(models), 8)
+        self.assertEqual([model.role for model in models], [turn["agent"] for turn in result["turns"]])
+        self.assertEqual(len({id(model) for model in models}), len(models))
+        # Each Agent turn contains multiple model invocations, not one factory call per request.
+        self.assertTrue(all(model.tool_step > 1 for model in models))
+
+    def test_live_mode_rejects_offline_factory(self):
+        with self.assertRaisesRegex(ValueError, "llm_factory is only for offline"):
+            self.workflow(mode="live", llm_factory=DemoLLM)
+
     def test_retry_only_rejected_agent_and_keep_accepted_upstream(self):
         counts = Counter()
 
@@ -47,7 +67,7 @@ class WorkflowIterationTests(unittest.TestCase):
         self.assertTrue(result["finished"])
         self.assertEqual(counts, {"PatientStateAgent": 1, "TargetSelectionAgent": 2,
                                   "DrugSelectionAgent": 1, "ReviewAgent": 4})
-        second = json.loads((Path(result["task_dir"]) / "05_TargetSelectionAgent/context.json").read_text())
+        second = json.loads((Path(result["task_dir"]) / "005_TargetSelectionAgent/context.json").read_text())
         self.assertEqual(second["attempt"], 2)
         self.assertEqual(second["accepted_outputs"], {"PatientStateAgent": result["accepted_outputs"]["PatientStateAgent"]})
         self.assertEqual(second["previous_feedback"]["stage_result"]["turn"], 3)
@@ -98,10 +118,10 @@ class WorkflowIterationTests(unittest.TestCase):
         self.assertEqual(result["accepted_outputs"], {})
         directory = Path(result["task_dir"])
         self.assertEqual(json.loads((directory / "workflow_plan.json").read_text()), result["workflow_plan"])
-        review = json.loads((directory / "02_ReviewAgent/context.json").read_text())
+        review = json.loads((directory / "002_ReviewAgent/context.json").read_text())
         self.assertEqual(review["instructions"], "Reject unsupported unit inference.")
         self.assertEqual(review["stage_instructions"], "Report unknown units explicitly.")
-        transcript = json.loads((directory / "01_PatientStateAgent/transcript.json").read_text())
+        transcript = json.loads((directory / "001_PatientStateAgent/transcript.json").read_text())
         self.assertIn("Report unknown units explicitly.", transcript[0]["content"])
 
     def test_invalid_plans_rejected_before_execution(self):

@@ -8,6 +8,9 @@
 串行执行，每次 Agent 输出交给 ReviewAgent；被拒绝后携带 reason 重跑当前 Agent，
 通过后才进入下一个阶段。MetaAgent 暂停接入，所有实际运行角色共享截止日绑定的患者状态。
 支持离线 demo、独立 Review 模型配置、结构化输出、有限重试和逐阶段日志。
+Context budgeting and lossless source retrieval are implemented in the shared Agent layer.
+Live profiles enable them in `config/models.jsonc`; see [context management](doc/context.md)
+for thresholds, per-Agent overrides, audit logs and fail-closed behavior.
 Python 入口统一为 `AgentWorkflow`；[test.ipynb](test.ipynb) 的“完整 AgentWorkflow”
 一节可独立运行，目前配置为三个 DeepSeek Flash 任务 Agent + DeepSeek V4 Pro Review。
 每次 workflow 实验统一保存在 `workspace/YYYY-MM-DD/run_<uuid>/`（北京时间）：
@@ -24,6 +27,18 @@ python scripts/organize_workspace.py workspace/2026-10-27
 ```
 
 科学工具暂为占位，demo 候选列表为空；真实患者提取和完整性检查实际执行。
+
+Natural-language tasks now include the patient and cutoff in one input:
+
+```python
+result = workflow.run("看下BPC数据集病人051542前220天的病例，推荐他的下一步用药。")
+```
+
+`051542` must uniquely match the dataset; `前220天` means inclusive relative day 220.
+PatientStateAgent calls the registered `bpc_state_extractor` tool and can use real
+`run_shell` for diagnostics (Docker isolation by default). See
+[natural-language requests and Shell configuration](doc/patient-request.md) for a
+complete runnable example, supported date forms, safety boundaries and limitations.
 
 ```bash
 python -m pip install -e .
@@ -58,26 +73,32 @@ python -m bpcagent.workflow.cli --data-dir ../bpc-patient-state/dataset \
 | Workflow 编排 | 调用任务 Agent，再调用 Review；决定继续、重做或停止，保存产物 | [runner.py](src/workflow/runner.py) |
 | 角色与共享状态 | 角色提示词、可用工具、结构化提交、截止日绑定的患者快照 | [workflow/agents.py](src/workflow/agents.py)、[state.py](src/workflow/state.py) |
 | 通用执行框架 | 模型请求 → 工具调用 → 工具结果回传 → 下一次模型请求 | [agents/agents.py](src/agents/agents.py)、[tools/tool.py](src/tools/tool.py) |
-| 数据提取和执行工具 | 读取 BPC 数据、组装状态和证据；独立流程可调用 Shell/Docker | [内置 BPCStateExtractor](vendor/README.md)、[tools/](src/tools/) |
+| Extraction and execution tools | Bounded state/evidence extraction; real patient-stage Shell, Docker-isolated by default | [Bundled extractor](vendor/README.md), [Patient tools](doc/patient-request.md) |
 
 患者提取统一使用 workflow 版 `PatientStateAgent`；高级单位纠错任务作为单独能力保留：
 
 | 路径 | 实际调用链 | 当前用途 |
 | --- | --- | --- |
-| 多 Agent workflow（本文主线） | `AgentWorkflow` → `workflow.agents.PatientStateAgent` → `SharedPatientState` → `bpc_state` | 提取并共享患者状态，然后进入靶点、药物、Review 流程 |
-| 高级单位纠错任务 | `PatientStateTask` → `UnitPatientStateAgent` → `create_patient_tools()` → `bpc_state` | 单独执行提取、Shell 单位核查／纠错和宿主验收；Task 入口启用 Docker |
+| 多 Agent workflow（本文主线） | `AgentWorkflow` → `workflow.agents.PatientStateAgent` → `SharedPatientState` → `bpc_state_extractor` | 提取并共享患者状态，然后进入靶点、药物、Review 流程 |
+| 高级单位纠错任务 | `PatientStateTask` → `UnitPatientStateAgent` → `create_patient_tools()` → `bpc_state_extractor` | 单独执行提取、Shell 单位核查／纠错和宿主验收；Task 入口启用 Docker |
 
 现在只有一个 `PatientStateAgent` 类，定义在 `src/workflow/agents.py`。
 `from bpcagent import PatientStateAgent` 和 `from bpcagent.workflow import PatientStateAgent`
 指向同一个类；旧的 `bpcagent.agents.patient_state` 模块及其患者参数构造接口已删除。
-普通调用从 `AgentWorkflow.run(patient_id=..., cutoff_day=...)` 进入；只提取患者时使用单阶段计划，
+Use `AgentWorkflow.run("病人051542前220天的病例")` or structured patient/cutoff arguments.
+For extraction only, use a single-stage plan;
 仍保留 Review。原独立版的状态/证据落盘能力已合并到 workflow，每次重试独立记录。
 `UnitPatientStateAgent` 直接继承 `BasicAgent`，其提取步骤为私有内部方法；Shell 纠错仍未自动接入主 workflow。
 
 ### 关键文件树
 
 下面列出主要源码与阅读入口，省略缓存、环境文件及部分测试文件；`src/` 安装后的包名是 `bpcagent`，
-内置工具安装后的包名是 `bpc_state`，映射由 `pyproject.toml` 定义。
+内置工具安装后的包名是 `bpc_state_extractor`，映射由 `pyproject.toml` 定义。
+
+The extractor's Python import and CLI are both named `bpc_state_extractor`:
+`from bpc_state_extractor import BPCStateExtractor` and `bpc_state_extractor --help`.
+This replaces the old `bpc_state` import and `bpc-state` command without compatibility aliases.
+After updating, run `python -m pip install -e .` again and restart your notebook kernel.
 
 ```text
 BPCAgent/
@@ -96,12 +117,14 @@ BPCAgent/
 ├── src/
 │   ├── __init__.py                   # 对外导出的通用 Agent、Tool、Task 等接口
 │   ├── log_paths.py                  # 日期分区、唯一实验目录和日志路径
+│   ├── agents/context.py             # Request budgets, structural compaction and exact source readback
 │   ├── workflow/                     # 多 Agent 主线
 │   │   ├── __init__.py               # 导出 AgentWorkflow、WorkflowPlan、StageSpec
 │   │   ├── cli.py                    # 命令行参数 → 配置 → workflow.run()
 │   │   ├── config.py                 # 解析 JSONC、路径、模型绑定和本机密钥
 │   │   ├── definition.py             # StageSpec / WorkflowPlan；校验依赖顺序
 │   │   ├── runner.py                 # 调度、任务/Review 循环、反馈、终止和落盘
+│   │   ├── request.py                # Resolve explicit patient/day scope from natural-language tasks
 │   │   ├── agents.py                 # 五种角色、提示词、工具注册、submit_output 校验
 │   │   ├── state.py                  # SharedPatientState、完整性检查、保守单位转换
 │   │   ├── models.py                 # 各阶段输出与 Review/Meta 输出的数据结构
@@ -121,6 +144,7 @@ BPCAgent/
 │   │   ├── bpc_patient.py            # 独立 Agent 的 BPC 工具适配及患者 JSON 保存器
 │   │   ├── shell.py                  # 本机 Shell；工作目录不是安全隔离边界
 │   │   ├── sandbox_shell.py          # Docker 内 Shell 的工具适配
+│   │   ├── patient_shell.py          # Bounded input export and real Shell adapter for PatientStateAgent
 │   │   └── calculator.py            # 计算器工具和通用工具调用示例
 │   ├── tasks/
 │   │   ├── base.py                   # Task 抽象接口、TaskResult
@@ -130,7 +154,7 @@ BPCAgent/
 │       ├── docker.py                # 容器创建、挂载、执行和清理
 │       └── image/Dockerfile         # 患者处理沙箱镜像
 ├── vendor/BPCStateExtractor/          # 直接内置的工具项目，不是数据集
-│   ├── src/bpc_state/
+│   ├── src/bpc_state_extractor/
 │   │   ├── repository.py            # 读取原始临床/分子数据文件
 │   │   ├── extractor.py             # 组装状态与证据；BoundedPatientTool 绑定患者/日期上限
 │   │   ├── models.py                # PatientState 等结构化数据模型
@@ -138,7 +162,7 @@ BPCAgent/
 │   │   ├── rules.py                 # 字段规则加载
 │   │   ├── tool_schema.py           # 生成患者状态/证据工具的函数调用 Schema
 │   │   ├── evaluation.py            # 单独导出 cutoff 之后的离线评估数据
-│   │   └── cli.py                   # bpc-state 命令行
+│   │   └── cli.py                   # bpc_state_extractor 命令行
 │   ├── config/field_rules.json      # 默认字段规则，作为包资源安装
 │   ├── schemas/                     # 患者状态和离线评估 JSON Schema
 │   └── tests/                       # 提取、缺失语义和时间泄漏回归测试
@@ -168,10 +192,11 @@ live 模式额外调用 `model_configs()`，按 `agents → models → providers
 **3. 进入 PatientState 阶段。** 看 [workflow/agents.py](src/workflow/agents.py) 的
 `WorkflowAgent.__init__()`：它将角色提示词和阶段指令组合，并为角色注册工具。
 所有角色都有 `get_shared_patient_state`、`get_stage_context`、`submit_output`；
-PatientState 额外拥有 `get_patient_state`、`get_patient_evidence`、`state_check`。
+PatientState also exposes `bpc_state_extractor` (`get_patient_state` alias),
+`get_patient_evidence`, `state_check`, and real `run_shell` unless disabled.
 模型不能自由改患者 ID 或 cutoff，这些由宿主绑定。
 
-**4. 看患者 JSON 从哪里来。** `get_patient_state` → `SharedPatientState.extract()` →
+**4. Patient JSON extraction.** `bpc_state_extractor` → `SharedPatientState.extract()` →
 `BoundedPatientTool.get_patient_state()` → 内置 `BPCStateExtractor`。
 第一次提取同时计算 `check_state()`、`normalize_markers()` 和近期观察视图，随后缓存成 JSON。
 每次读取返回独立副本；重试不会重新生成一个不同的共享快照。
@@ -199,6 +224,16 @@ Schema 在 [workflow/models.py](src/workflow/models.py)，额外校验在 `Workf
 只有 Agent 正常完成且结构化结果已提交，调度器才把该次执行记为成功。
 
 **6. 回到调度器看 Review 和重试。** `_run()` 内部的 `invoke()` 每调用一次完整 Agent 就记录一个 turn。
+
+The runner's `invoke(role, context)` creates an Agent, runs its model/tool loop,
+and saves one turn's context and structured result. `LLM.invoke(messages, ...)`
+only sends one model request and returns text/tool-call requests; it does not execute tools.
+Several model invocations can therefore occur inside one Agent turn.
+`llm_factory(role)` is an optional offline test/demo hook that returns a model double
+for each turn (including reviews and retries). It defaults to `DemoLLM` in demo mode.
+Live mode rejects this hook and builds each Agent's LLM from its configured provider/model.
+New turn directories use three-digit minimum padding, e.g. `001_PatientStateAgent`;
+previous experiment directories are not renamed.
 任务输出后立即新建 ReviewAgent，它读取相同患者快照、阶段上下文和待审输出。
 
 ```text
@@ -254,21 +289,21 @@ workspace/日期/run_<uuid>/
 ├── request.json                     # 患者、日期边界、模式、候选数和默认尝试上限
 ├── workflow_plan.json               # 本次执行的阶段计划快照
 ├── logs/console.log                 # stdout/stderr 和运行开始、结束状态
-├── 01_PatientStateAgent/
+├── 001_PatientStateAgent/
 │   ├── context.json                 # 该 turn 的阶段指令、上游输出、已有反馈
 │   ├── transcript.json              # 模型消息、工具调用、工具返回
 │   └── output.json                  # 状态封装 + 校验后的结构化输出或失败原因
-├── 02_ReviewAgent/                   # 同样三个文件；output 中查看 disposition/reason
-├── 03_TargetSelectionAgent/
-├── 04_ReviewAgent/
-├── 05_DrugSelectionAgent/
-├── 06_ReviewAgent/
+├── 002_ReviewAgent/                   # 同样三个文件；output 中查看 disposition/reason
+├── 003_TargetSelectionAgent/
+├── 004_ReviewAgent/
+├── 005_DrugSelectionAgent/
+├── 006_ReviewAgent/
 ├── patient_state.json               # 原始 cutoff 快照（成功提取后保存）
 ├── shared_patient_state.json        # 加上近期视图、单位转换、完整性报告和哈希
 └── workflow_result.json             # 所有 turn、Review 反馈、接受的输出和最终状态
 ```
 
-重试时编号继续递增，例如 `03_PatientStateAgent/`，不要仅凭序号推断角色。
+重试时编号继续递增，例如 `003_PatientStateAgent/`，不要仅凭序号推断角色。
 PatientState 阶段还保存 `patient_state_day_<cutoff>_<序号>.json` 和
 `patient_evidence_day_<cutoff>_<序号>.json`；证据可分多次查询，不覆盖先前批次。
 每个 turn 的 `artifacts` 字段列出这些文件，路径相对本次实验的 `task_dir`。
@@ -280,7 +315,7 @@ live 会调用配置的外部模型服务并发送截止日内患者信息，可
 
 - 已实现：真实患者提取、截止日限制、缺失语义、共享状态、基础检查、结构化输出、Review 有限重试和完整记录。
 - 仍占位：workflow 中的 `search`、`bash`、`pathway_graph`、`graph_ranking`、`drug_catalog`、`dock`、`ept_meet`、`drug_metrics`。
-  即使仓库有真实 `ShellTool`，也不代表 workflow 的 `bash` 已经接入它。
+  PatientStateAgent instead exposes real `run_shell`; target/drug `bash` remains a placeholder.
 - 当前提交校验会拒绝非空的靶点／药物候选；demo 和 live 都不会绕过这一限制。
   接入真实科学工具时，需一起更新工具实现、候选校验和测试，而不是只修改提示词。
 - MetaAgent 类和提案结构存在，但调度未启用；RSI 不会自动改代码、配置或数据集。
@@ -314,7 +349,8 @@ live 会调用配置的外部模型服务并发送截止日内患者信息，可
 | `PatientEvidenceTool` | `get_patient_evidence` | `cutoff_day`、`evidence_refs`：返回对应证据并保存 JSON |
 
 上表的工具类是直接调用工具/单位纠错任务的适配，可通过 `create_patient_tools()` 创建。
-Workflow 复用同一个底层提取器及 JSON 保存器，并固定 cutoff：`get_patient_state` 无参数，
+Workflow reuses the extractor and JSON artifact store with a fixed cutoff:
+`bpc_state_extractor` (alias `get_patient_state`) takes no arguments;
 `get_patient_evidence` 只接受 `evidence_refs`，不让模型改变患者或日期。
 
 ## 通过 Task 运行完整患者流程

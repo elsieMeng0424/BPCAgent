@@ -48,7 +48,7 @@ class RuleSet:
         resource = (
             Path(path)
             if path is not None
-            else files("bpc_state.resources").joinpath("field_rules.json")
+            else files("bpc_state_extractor.resources").joinpath("field_rules.json")
         )
         with resource.open(encoding="utf-8") as handle:
             self.config: dict[str, Any] = json.load(handle)

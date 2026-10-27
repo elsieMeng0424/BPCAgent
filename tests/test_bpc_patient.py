@@ -1,4 +1,4 @@
-"""验证患者工具适配和落盘边界；不依赖 bpc_state 或模型服务。"""
+"""验证患者工具适配和落盘边界；不依赖 bpc_state_extractor 或模型服务。"""
 
 import json
 from pathlib import Path

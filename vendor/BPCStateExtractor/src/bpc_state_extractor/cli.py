@@ -21,7 +21,7 @@ def _write(payload: object, output: str | None) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="bpc-state", description="Extract cutoff-safe GENIE BPC patient state"
+        prog="bpc_state_extractor", description="Extract cutoff-safe GENIE BPC patient state"
     )
     parser.add_argument(
         "--data-dir",

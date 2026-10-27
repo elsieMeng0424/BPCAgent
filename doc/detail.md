@@ -78,7 +78,7 @@ for tool in tools:
 
 两个工具共用保存器，按调用顺序生成 `patient_state_day_220_001.json`、`patient_evidence_day_220_002.json` 等文件，不覆盖已有文件。状态原样保存，证据文件附带患者、癌症参数、截止日和引用列表；返回给模型的数据保持原接口结构。查询或写入失败会通过 `ToolRegistry` 返回工具错误。工具不会生成 `answer.json`，也不会读取环境文件或创建模型。
 
-工具参数模型按各自绑定的最大截止日生成；患者身份和时间边界仍由 `BoundedPatientTool` 执行。工厂函数支持可选的 `cancer_id`，省略 `rules_path` 时使用内置 `bpc_state` 的默认规则资源。BPCStateExtractor 源码在 `vendor/BPCStateExtractor/`，随 BPCAgent 安装，无需外部源码路径。仅调用工厂函数时才导入 `bpc_state`，普通模块导入不读取数据集。需要复用已有绑定时，仍可直接实例化 `PatientStateTool`、`PatientEvidenceTool` 和 `PatientArtifactStore`。
+工具参数模型按各自绑定的最大截止日生成；患者身份和时间边界仍由 `BoundedPatientTool` 执行。工厂函数支持可选的 `cancer_id`，省略 `rules_path` 时使用内置 `bpc_state_extractor` 的默认规则资源。BPCStateExtractor 源码在 `vendor/BPCStateExtractor/`，随 BPCAgent 安装，无需外部源码路径。仅调用工厂函数时才导入 `bpc_state_extractor`，普通模块导入不读取数据集。需要复用已有绑定时，仍可直接实例化 `PatientStateTool`、`PatientEvidenceTool` 和 `PatientArtifactStore`。
 
 ## 患者数据提取智能体
 

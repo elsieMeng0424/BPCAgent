@@ -4,6 +4,7 @@ import os
 from typing import Any, ClassVar, Literal, Mapping, Optional
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, field_validator
 from .exceptions import ConfigException
+from .context import ContextPolicy
 
 
 class Config(BaseModel):
@@ -25,6 +26,7 @@ class Config(BaseModel):
     timeout: float = Field(120, gt=0, allow_inf_nan=False)
     max_tool_iterations: int = Field(3, gt=0)
     max_steps: int = Field(5, gt=0)
+    context: ContextPolicy = Field(default_factory=ContextPolicy)
 
     # 保留字段，暂未接入提供方切换、日志控制和历史裁剪逻辑。
     default_provider: str = "openai"

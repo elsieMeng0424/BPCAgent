@@ -1,5 +1,6 @@
 {
   "agents": {
+    // Optional per-agent override, merged over its model profile: "context": {"max_input_tokens": 24000}
     "PatientStateAgent": {"llm": "deepseek_flash_low"}, // 可选：deepseek_flash_low | deepseek_pro_low | astra_medium | sol_medium，或新增 profiles 键名
     "TargetSelectionAgent": {"llm": "deepseek_flash_low"}, // 每个 Agent 可独立选择
     "DrugSelectionAgent": {"llm": "deepseek_flash_low"}, // 可选档位同上

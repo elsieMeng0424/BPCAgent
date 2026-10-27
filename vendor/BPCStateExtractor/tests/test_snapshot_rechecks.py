@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from bpc_state import BPCStateExtractor
-from bpc_state.repository import CLINICAL_FILES
+from bpc_state_extractor import BPCStateExtractor
+from bpc_state_extractor.repository import CLINICAL_FILES
 from conftest import write_csv
 
 

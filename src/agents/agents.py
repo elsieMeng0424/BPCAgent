@@ -5,8 +5,10 @@ from copy import deepcopy
 import json
 from typing import Iterator, Optional
 import warnings
+from pydantic import Field
 
 from .config import Config
+from .context import ContextManager
 from .messages import LLMResponse, Message, ToolCall
 from .models import LLM
 from .result import AgentResult
@@ -64,6 +66,65 @@ class Agent(ABC):
             self.llm = llm
             self.config = Config.resolve(config)
         self._history: list[Message] = []
+        self.context_manager = ContextManager(self.config.context)
+
+    def _register_context_reader(self):
+        """Attach a private reader; never share another Agent's archive closure."""
+        if not self.config.context.enabled or not getattr(self, "enable_tool_calling", True):
+            return
+        from ..tools import ToolArgs
+
+        class ReadContextArgs(ToolArgs):
+            record_id: str = Field(pattern=r"^ctx_[0-9a-f]{64}$")
+            pointer: str = ""
+            offset: int = Field(0, ge=0)
+            limit: int = Field(1000, gt=0, le=2000)
+
+        original = self.tool_registry
+        if original and original.get_tool(ContextManager.reader_name):
+            raise ConfigException("read_context_record is reserved for the Agent context manager")
+        registry = ToolRegistry()
+        if original:
+            for name in original.list_tools():
+                registry.register_tool(original.get_tool(name))
+        registry.register_function(
+            ContextManager.reader_name,
+            "Read exact archived output from THIS Agent run. Use a JSON Pointer into the original ToolResult "
+            "(e.g. /data/patient_state/meta or /data/observations), then paginate with offset/limit. "
+            "An archived index is not evidence of missing data. Read relevant fields before making claims.",
+            self.context_manager.read, args_schema=ReadContextArgs,
+        )
+        self.tool_registry = registry
+
+    def _prepare_model_request(self, messages, kwargs):
+        """Bound a request copy without modifying the full audit transcript."""
+        options = deepcopy(kwargs)
+        if not self.config.context.enabled:
+            return deepcopy(messages), options
+        effective = (self.llm.context_request_options(options) if isinstance(self.llm, LLM)
+                     else {"max_tokens": self.config.max_tokens, **options})
+        extra_body = effective.get("extra_body") or {}
+        if not isinstance(extra_body, dict):
+            raise ConfigException("extra_body must be an object for context budgeting")
+        if {"max_tokens", "max_completion_tokens", "max_output_tokens"}.intersection(extra_body):
+            # Nested values (especially null) could override a reserved top-level cap.
+            raise ConfigException("With context budgeting, set output limits at the top level, not in extra_body")
+        outputs = [source.get(key) for source in (effective, extra_body)
+                   for key in ("max_tokens", "max_completion_tokens", "max_output_tokens")]
+        if any(value is not None and (type(value) is not int or value <= 0) for value in outputs):
+            raise ConfigException("Output token limits must be positive integers")
+        if not any(value is not None for value in outputs):
+            # Do not reserve one output size while permitting an unknown provider default.
+            options["max_tokens"] = self.config.context.reserve_output_tokens
+            effective = (self.llm.context_request_options(options) if isinstance(self.llm, LLM)
+                         else {**effective, "max_tokens": self.config.context.reserve_output_tokens})
+        output_limit = max([v for v in outputs if v is not None] or [self.config.context.reserve_output_tokens])
+        names = {t.get("function", {}).get("name") for t in effective.get("tools", [])}
+        registry = getattr(self, "tool_registry", None)
+        can_read = (ContextManager.reader_name in names and registry is not None
+                    and registry.get_tool(ContextManager.reader_name) is not None)
+        request = self.context_manager.prepare(messages, effective, output_tokens=output_limit, can_read=can_read)
+        return request, options
 
     @abstractmethod
     def run(self, input: str, **kwargs) -> AgentResult:
@@ -91,6 +152,8 @@ class Agent(ABC):
                 "history": [message.model_dump(mode="json") for message in self._history],
                 "transcript": messages,
             }
+            if self.config.context.enabled:
+                data["context"] = self.context_manager.audit()
             with log_path.open("x", encoding="utf-8") as file:
                 json.dump(data, file, ensure_ascii=False, indent=2)
             self.log_path = log_path
@@ -99,7 +162,8 @@ class Agent(ABC):
     
     def _invoke_response(self, messages, **kwargs) -> LLMResponse:
         """检查响应结构和结束状态，工具调用允许没有文本。"""
-        response = self.llm.invoke(messages, **kwargs)
+        request, options = self._prepare_model_request(messages, kwargs)
+        response = self.llm.invoke(request, **options)
         if not isinstance(response, LLMResponse):
             raise AgentException("The model must return an LLMResponse", code="invalid_response")
         # 先保存已收到的响应，异常结束时也能查看当时的内容。
@@ -134,6 +198,7 @@ class Agent(ABC):
 
     def _run_with_tools(self, messages: list, input: str, max_tool_iterations: int, **kwargs) -> AgentResult:
         """包装本次运行；配置错误和未标识的程序错误继续向外抛出。"""
+        self.context_manager.reset()
         try:
             text = self._run_tool_loop(messages, input, max_tool_iterations, **kwargs)
         except (LLMException, AgentException) as exc:
@@ -195,7 +260,8 @@ class BasicAgent(Agent):
         """
         super().__init__(name, llm, sys_prompt, config)
         self.tool_registry = tool_registry
-        self.enable_tool_calling = enable_tool_calling and tool_registry is not None
+        self.enable_tool_calling = enable_tool_calling and (tool_registry is not None or self.config.context.enabled)
+        self._register_context_reader()
         print(f"✅ Agent {name} initialized; tool calling: {'enabled' if self.enable_tool_calling else 'disabled'}")
 
     def run(self, input: str, max_tool_iterations: Optional[int] = None, **kwargs) -> AgentResult:
@@ -237,7 +303,7 @@ class BasicAgent(Agent):
         流式运行
         """
         print(f"🌊 {self.name} is streaming: {input}")
-        if self.enable_tool_calling and self.tool_registry and self.tool_registry.list_tools():
+        if self.enable_tool_calling and self.tool_registry and set(self.tool_registry.list_tools()) - {ContextManager.reader_name}:
             raise ConfigException("The streaming interface supports plain text only; use run for tool calls")
 
         # 获取消息
@@ -250,8 +316,10 @@ class BasicAgent(Agent):
 
         # 生成流式调用
         full_response = ""
+        self.context_manager.reset()
         try:
-            for chunk in self.llm.think(messages, **kwargs):
+            request, options = self._prepare_model_request(messages, kwargs)
+            for chunk in self.llm.think(request, **options):
                 full_response += chunk
                 yield chunk
 
@@ -320,6 +388,7 @@ class ReActAgent(Agent):
 
         # 如果没有提供工具注册表就自己注册一个
         self.tool_registry = tool_registry if tool_registry else ToolRegistry()
+        self._register_context_reader()
 
         # 如果没有提示词模版就使用默认模版
         self.prompt_template = prompt_template if prompt_template else REACT_PROMPT_TEMPLATE

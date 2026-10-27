@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from bpc_state import BPCStateExtractor, BoundedPatientTool
-from bpc_state.rules import integer, number
-from bpc_state.rules import RuleSet
-from bpc_state.tool_schema import evidence_tool_schema
+from bpc_state_extractor import BPCStateExtractor, BoundedPatientTool
+from bpc_state_extractor.rules import integer, number
+from bpc_state_extractor.rules import RuleSet
+from bpc_state_extractor.tool_schema import evidence_tool_schema
 from conftest import write_csv
 
 

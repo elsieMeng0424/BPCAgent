@@ -22,7 +22,7 @@ from bpcagent.workflow.state import SharedPatientState, check_state, digest, nor
 
 
 def fixture_dataset(root):
-    from bpc_state.repository import CLINICAL_FILES
+    from bpc_state_extractor.repository import CLINICAL_FILES
 
     root.mkdir()
     base = {"cohort": "Prostate", "record_id": "P1"}
@@ -122,6 +122,9 @@ class WorkflowTests(unittest.TestCase):
         ])
         self.assertEqual(len({r["patient_state_sha256"] for r in result["turns"]}), 1)
         folder = Path(result["task_dir"])
+        turn_directories = sorted(p.name for p in folder.iterdir()
+                                  if p.is_dir() and p.name != "logs")
+        self.assertEqual(turn_directories, [f"{i:03d}_{role}" for i, role in enumerate(roles, 1)])
         snapshot = json.loads((folder / "shared_patient_state.json").read_text())
         raw = snapshot["patient_state"]
         self.assertEqual(result["patient_state_sha256"], digest(raw))
@@ -136,13 +139,13 @@ class WorkflowTests(unittest.TestCase):
             self.assertNotIn("meta_result", stage)
         self.assertEqual(result["accepted_outputs"]["DrugSelectionAgent"]["candidates"], [])
         self.assertEqual(len(list(folder.glob("*/transcript.json"))), 6)
-        review_context = json.loads((folder / "06_ReviewAgent" / "context.json").read_text())
+        review_context = json.loads((folder / "006_ReviewAgent" / "context.json").read_text())
         self.assertEqual(review_context["stage_result"], result["stages"][-1]["stage_result"])
         self.assertIn("TargetSelectionAgent", review_context["accepted_outputs"])
         self.assertEqual([t["turn"] for t in result["turns"]], list(range(1, 7)))
         self.assertEqual([t["reviews_turn"] for t in result["turns"][1::2]], [1, 3, 5])
         self.assertFalse(result["meta_enabled"])
-        transcript = json.loads((folder / "05_DrugSelectionAgent" / "transcript.json").read_text())
+        transcript = json.loads((folder / "005_DrugSelectionAgent" / "transcript.json").read_text())
         tools = [json.loads(m["content"]) for m in transcript if m["role"] == "tool"]
         self.assertEqual(next(t["data"]["status"] for t in tools if t["tool_name"] == "dock"), "not_implemented")
 
@@ -165,7 +168,7 @@ class WorkflowTests(unittest.TestCase):
         result = self.workflow(llm_factory=factory).run(patient_id="P1", cutoff_day=50)
         self.assertTrue(result["finished"])
         self.assertEqual(len(result["turns"]), 8)
-        context = json.loads((Path(result["task_dir"]) / "03_PatientStateAgent" / "context.json").read_text())
+        context = json.loads((Path(result["task_dir"]) / "003_PatientStateAgent" / "context.json").read_text())
         self.assertEqual(context["previous_feedback"]["review_result"]["output"]["disposition"], "revise")
         self.assertEqual(context["previous_feedback"]["review_result"]["output"]["reason"], "Please fix the stage output.")
         self.assertNotIn("PatientStateAgent", context["accepted_outputs"])
@@ -285,7 +288,7 @@ class WorkflowTests(unittest.TestCase):
             check_state(changed)
 
     def test_offline_evaluation_separate_with_matching_hash(self):
-        from bpc_state.evaluation import OfflineEvaluationExporter
+        from bpc_state_extractor.evaluation import OfflineEvaluationExporter
 
         result = self.workflow().run(patient_id="P1", cutoff_day=50)
         evaluation = OfflineEvaluationExporter(self.data).export("P1", 50, 150)

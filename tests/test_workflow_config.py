@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from bpcagent.workflow.config import WorkflowConfiguration
 from bpcagent.workflow.cli import main
+from bpcagent.agents.exceptions import ConfigException
 
 
 class WorkflowConfigurationTests(unittest.TestCase):
@@ -62,6 +63,40 @@ class WorkflowConfigurationTests(unittest.TestCase):
         self.assertNotIn("MetaAgent", models)
         self.assertNotIn("local-secret", repr(task))
         self.assertNotIn("local-secret", task.model_dump_json())
+
+    def test_patient_only_override_does_not_require_other_agent_profiles(self):
+        self.write("agents.jsonc", {"agents": {
+            "PatientStateAgent": {"llm": "task"}, "ReviewAgent": {"llm": "review"}}})
+        configs = WorkflowConfiguration(self.workflow).model_configs(
+            environ={}, plan={"stages": [{"agent": "PatientStateAgent"}]})
+        self.assertEqual(set(configs["agent_configs"]), {"PatientStateAgent", "ReviewAgent"})
+
+    def test_context_policy_from_profile_and_partial_agent_override(self):
+        models = json.loads((self.config / "models.jsonc").read_text())
+        models["profiles"]["task"]["context"] = {
+            "enabled": True, "context_window": 20000, "reserve_output_tokens": 1000,
+            "safety_margin_tokens": 100, "trigger_ratio": 0.9,
+        }
+        self.write("models.jsonc", models)
+        agents = json.loads((self.config / "agents.jsonc").read_text())
+        agents["agents"]["PatientStateAgent"]["context"] = {
+            "max_input_tokens": 3000, "context_window": 4000, "target_ratio": 0.8,
+        }
+        self.write("agents.jsonc", agents)
+        configs = WorkflowConfiguration(self.workflow).model_configs(environ={})["agent_configs"]
+        patient = configs["PatientStateAgent"].context
+        self.assertEqual(patient.context_window, 4000)
+        self.assertEqual(patient.reserve_output_tokens, 1000)
+        self.assertEqual(patient.target_ratio, 0.8)
+        self.assertEqual(configs["TargetSelectionAgent"].context.context_window, 20000)
+        self.assertFalse(configs["ReviewAgent"].context.enabled)
+
+    def test_invalid_merged_context_policy_is_rejected(self):
+        agents = json.loads((self.config / "agents.jsonc").read_text())
+        agents["agents"]["PatientStateAgent"]["context"] = {"enabled": True, "context_window": 100}
+        self.write("agents.jsonc", agents)
+        with self.assertRaises(ConfigException):
+            WorkflowConfiguration(self.workflow).model_configs(environ={})
 
     def test_environment_precedence_and_no_global_mutation(self):
         env = {"OPENAI_API_KEY": "env-secret", "TASK_LLM_MODEL_ID": "env-task",

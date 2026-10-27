@@ -25,7 +25,7 @@ class WorkflowNotebookTests(unittest.TestCase):
             configuration.return_value.workflow_options.return_value = {"mode": "live"}
             configuration.return_value.model_configs.return_value = {"agent_configs": {}}
             workflow.return_value.configs = {}
-            def fake_run(**kwargs):
+            def fake_run(*args, **kwargs):
                 directory = create_run_directory(Path(temp) / "workspace")
                 log = directory / "logs/console.log"
                 log.write_text("synthetic console")
@@ -43,7 +43,7 @@ class WorkflowNotebookTests(unittest.TestCase):
                 exec(compile(source, "test.ipynb:" + name, "exec"), namespace)
                 self.assertEqual(dict(os.environ), before)
             workflow.return_value.run.assert_called_once_with(
-                patient_id="GENIE-DFCI-051542", cutoff_day=50, start_day=None)
+                "看下BPC数据集病人051542前220天的病例，推荐他的下一步用药。")
             first_log = namespace["log_path"]
             self.assertEqual(first_log.parent, Path(namespace["workflow_result"]["task_dir"]) / "logs")
             self.assertTrue(first_log.is_file())

@@ -113,9 +113,24 @@ class LLM:
             print(f"❌ LLM API call failed: {e}")
             raise LLMException(f"LLM streaming call failed: {str(e)}") from e
 
+    def context_request_options(self, overrides):
+        """Expose resolved non-secret request settings for preflight budgeting.
+
+        Include constructor defaults and per-call overrides, so response schemas
+        and output limits cannot bypass budgeting merely by being set on the LLM.
+        This method performs no network calls and does not mutate configuration.
+        """
+        return self._build_request_params(overrides, stream=False)
+
     def invoke(self, messages: List[Dict[str, Any]], *, tools=None, tool_choice=None,
                **kwargs) -> LLMResponse:
-        """返回文本、可选推理内容、原生工具调用和结束原因，不执行工具。"""
+        """Make one non-streaming model request and normalize its response.
+
+        Return text, optional reasoning, requested tool calls and a finish reason.
+        This method does not execute tools; BasicAgent's loop executes them and
+        sends their results back through subsequent invoke calls. In contrast,
+        runner.py's local invoke helper runs an entire Agent turn.
+        """
         if tools:
             kwargs["tools"] = tools
             if tool_choice is not None:

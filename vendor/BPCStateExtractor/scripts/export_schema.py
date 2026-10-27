@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from bpc_state.models import PatientState, EvaluationData
+from bpc_state_extractor.models import PatientState, EvaluationData
 
 
 root = Path(__file__).resolve().parents[1]

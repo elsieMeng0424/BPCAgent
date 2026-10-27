@@ -25,15 +25,15 @@ test = ["pytest>=7,<9"]
 
 [project.scripts]
 bpc-workflow = "bpcagent.workflow.cli:main"
-bpc-state = "bpc_state.cli:main"
+bpc_state_extractor = "bpc_state_extractor.cli:main"
 
 [tool.setuptools]
-package-dir = {"bpcagent" = "src", "bpc_state" = "vendor/BPCStateExtractor/src/bpc_state", "bpc_state.resources" = "vendor/BPCStateExtractor/config"}
-packages = ["bpcagent", "bpcagent.agents", "bpcagent.tools", "bpcagent.sandbox", "bpcagent.tasks", "bpcagent.workflow", "bpc_state", "bpc_state.resources"]
+package-dir = {"bpcagent" = "src", "bpc_state_extractor" = "vendor/BPCStateExtractor/src/bpc_state_extractor", "bpc_state_extractor.resources" = "vendor/BPCStateExtractor/config"}
+packages = ["bpcagent", "bpcagent.agents", "bpcagent.tools", "bpcagent.sandbox", "bpcagent.tasks", "bpcagent.workflow", "bpc_state_extractor", "bpc_state_extractor.resources"]
 include-package-data = false
 
 [tool.setuptools.package-data]
-"bpc_state.resources" = ["*.json"]
+"bpc_state_extractor.resources" = ["*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "vendor/BPCStateExtractor/tests"]

@@ -8,6 +8,8 @@ from typing import Literal, Mapping
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..agents import Config
+from ..agents.context import ContextPolicy
+from ..tools.patient_shell import PatientShellConfig
 from .definition import WorkflowPlan
 
 
@@ -27,6 +29,7 @@ class WorkflowSettings(SettingsModel):
     top_m: int = Field(5, gt=0)
     top_k: int = Field(5, gt=0)
     max_stage_attempts: int = Field(2, gt=0)
+    patient_shell: PatientShellConfig = Field(default_factory=PatientShellConfig)
     plan_file: str | None = None
 
 
@@ -52,6 +55,7 @@ class LLMProfile(SettingsModel):
     max_tokens: int | None = Field(None, gt=0)
     timeout: float = Field(120, gt=0, allow_inf_nan=False)
     max_tool_iterations: int = Field(10, gt=0)
+    context: ContextPolicy = Field(default_factory=ContextPolicy)
 
 
 class ProfilesSettings(SettingsModel):
@@ -60,6 +64,8 @@ class ProfilesSettings(SettingsModel):
 
 class AgentLLMSettings(SettingsModel):
     llm: str = Field(min_length=1)
+    # Validate the merged policy, not a partial override against unrelated defaults.
+    context: dict[str, object] | None = None
 
 
 class AgentsSettings(SettingsModel):
@@ -147,7 +153,8 @@ class WorkflowConfiguration:
     def workflow_plan(self):
         return WorkflowPlan.model_validate_json(self._plan_json)
 
-    def model_configs(self, environ: Mapping[str, str] | None = None):
+    def model_configs(self, environ: Mapping[str, str] | None = None, *, plan=None):
+        """Load only models needed by the effective plan, including CLI overrides."""
         if self.path is None:
             raise ValueError("Live mode requires workflow.jsonc and per-agent model profiles")
         env = os.environ if environ is None else environ
@@ -160,15 +167,16 @@ class WorkflowConfiguration:
             secrets = read_object(secrets_path)
             if any(not isinstance(v, str) for v in secrets.values()):
                 raise ValueError("Local secrets must map environment variable names to strings")
-        return self._agent_configs(model_data, secrets, env)
+        effective_plan = self.workflow_plan() if plan is None else WorkflowPlan.model_validate(plan)
+        return self._agent_configs(model_data, secrets, env, effective_plan)
 
-    def _agent_configs(self, model_data, secrets, env):
+    def _agent_configs(self, model_data, secrets, env, plan):
         profiles = validate(ProfilesSettings, model_data, "profiles").profiles
         providers = validate(ProvidersSettings, read_object(relative_path(
             self.settings.providers_file, self.path.parent)), "providers").providers
         agents = validate(AgentsSettings, read_object(relative_path(
             self.settings.agents_file, self.path.parent)), "agents").agents
-        required = self.workflow_plan().active_roles
+        required = plan.active_roles
         if not set(required) <= set(agents):
             raise ValueError("agents.jsonc must configure all active task agents and ReviewAgent")
         configs = {}
@@ -188,6 +196,8 @@ class WorkflowConfiguration:
                 raise ValueError("Claude compatibility API ignores reasoning_effort; set it to null")
             key = provider.api_key_env
             values = profile.model_dump(exclude={"provider"})
+            if binding.context is not None:
+                values["context"].update(binding.context)
             values.update(base_url=provider.base_url, api_mode=provider.api_mode,
                           api_key=env[key] if key in env else secrets.get(key),
                           default_provider=profile.provider)

@@ -101,7 +101,10 @@ cd /home/u2021202188/BPCAgent
 ```
 
 省略 `--mode live` 时默认 demo，不读取密钥文件，也不连接模型服务。
-患者 ID、cutoff、start-day 仍为每次运行的参数，避免把患者选择固化成环境配置。
+Patient ID and date boundaries are supplied per run, either in `--request` /
+`workflow.run(text)` or as structured arguments. They are not model/environment settings.
+`workflow.jsonc.patient_shell` selects `sandbox` (default), `local` (requires explicit
+`allow_unsafe_local=true`) or `disabled`; see [patient Shell configuration](../doc/patient-request.md).
 
 配置规则：
 
@@ -158,3 +161,12 @@ result = workflow.run(patient_id="GENIE-DFCI-051542", cutoff_day=249)
 
 配置目录是部署侧文件，不嵌入 wheel；使用 wheel 时保留此目录并用 `--config` 指向它。
 `config/*.local.json` 已加入 `.gitignore`，Git 忽略不等于加密，应限制本地文件读取权限。
+
+## Context policy
+
+Each profile in `models.jsonc` accepts a `context` object; an Agent binding in
+`agents.jsonc` can override individual fields. Checked-in live profiles enable a
+local 32,000 input budget with a conservative byte-based token estimate. Their
+model and gateway window sizes remain null until verified/configured; these are
+not claimed provider capacities. See [context management](../doc/context.md)
+for the budget formula, original-source retrieval and migration details.

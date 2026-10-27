@@ -1,7 +1,7 @@
 # 内置 BPCStateExtractor 工具
 
 `BPCStateExtractor/` 是工具项目的源码快照，不是 Git submodule，也不是运行时下载依赖。
-安装 BPCAgent 会同时安装 `bpc_state` 包、默认规则资源和 `bpc-state` CLI。
+安装 BPCAgent 会同时安装 `bpc_state_extractor` 包、默认规则资源和 `bpc_state_extractor` CLI。
 不需要再安装相邻的 `bpc-patient-state` 工具项目，也不修改 `sys.path`。
 
 ## 来源与同步状态
@@ -13,8 +13,9 @@
 - 导入来源：本机原 `pathway-agent` 工作树；当前本地目录为 `/home/u2021202188/bpc-patient-state`。
 - 随快照保留的 0.3.0 / Schema 1.2 更新（缺失语义、独立离线评估及配套测试）
   已于 2026-10-26 推送至上游提交 `ae96917d2ace4f3010588bf385599110a4251c43`。
-- 研究设计文档编辑与改名、BPCStateExtractor 项目表述及本机路径修正
-  已同步到上述上游提交；本目录保留的文件与该提交逐文件一致。
+- Local changes after that upstream commit: rename the Python package and CLI
+  to `bpc_state_extractor`, including imports, resource paths, tests and examples.
+  The sibling extractor checkout contains the same changes; they are not yet committed.
 - 保留了工具的源码、规则、schema、示例、文档、测试和独立 `pyproject.toml`。
   未复制 `.git`、数据集、缓存、虚拟环境或密钥。
 - 子目录 README 中的绝对路径是原项目用法；BPCAgent 的安装和调用方式以本文件
@@ -26,12 +27,14 @@
 
 ```bash
 python -m pip install -e '.[test]'
-bpc-state --help
+bpc_state_extractor --help
 python -m pytest
 ```
 
-`bpc_state` 是内置工具的 Python 包名，不随 GitHub 仓库改名而更改。
-上游项目名统一为 BPCStateExtractor；本次只同步命名/链接和内置目录，未改上游现有 distribution 名 `bpc-patient-state`。
+Both the Python import name and terminal command are now `bpc_state_extractor`.
+The old `bpc_state` import and `bpc-state` command are no longer provided.
+Reinstall BPCAgent after updating, then restart any running notebook kernel.
+The standalone distribution name remains `bpc-patient-state`; this is only its pip metadata name.
 不要同时安装独立 `bpc-patient-state` 和 BPCAgent：两者提供相同的包及 CLI。
 如果已有旧的独立安装，先卸载 `bpc-patient-state`，再重新安装 BPCAgent。
 
@@ -43,11 +46,11 @@ python -m pytest
 
 ```text
 PatientStateAgent
-  ├─ get_patient_state    → bpc_state.BoundedPatientTool → BPCStateExtractor
+  ├─ get_patient_state    → bpc_state_extractor.BoundedPatientTool → BPCStateExtractor
   ├─ get_patient_evidence → 同患者、同 cutoff 的证据引用
   └─ state_check          → BPCAgent 的完整性/单位检查
 
-bpc-state evaluation     → 独立离线评估，不注册为 Agent 工具
+bpc_state_extractor evaluation     → 独立离线评估，不注册为 Agent 工具
 ```
 
 五 Agent 工作流的证据工具只接受当前共享快照里的引用；患者 ID、数据路径和 cutoff

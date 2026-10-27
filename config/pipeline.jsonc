@@ -4,7 +4,7 @@
     {
       "agent": "PatientStateAgent", // 本阶段内部提取患者状态、查证据、调用 state_check
       "max_attempts": null, // null 沿用 workflow.jsonc；或正整数（包含首次执行）
-      "instructions": "Extract and save the bounded patient state, retrieve and save evidence when references exist, and run state_check before submitting."
+      "instructions": "Follow the user's task using bpc_state_extractor, get_patient_evidence, state_check and real run_shell when useful. Save bounded state and evidence, check completeness before submitting, and disclose tool failures. Shell diagnostics never overwrite the authoritative snapshot."
     },
     {
       "agent": "TargetSelectionAgent", // 只接收已被 Review 接受的上游输出

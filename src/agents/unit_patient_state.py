@@ -128,6 +128,8 @@ class UnitPatientStateAgent(BasicAgent):
             "transcript": result.transcript,
             "sandbox": self.sandbox.metadata() if self.sandbox is not None else None,
         }
+        if self.config.context.enabled:
+            payload["context"] = self.context_manager.audit()
         text = json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False)
         self.log_path = new_log_path(self.name, run_dir=self.task_dir)
         with self.log_path.open("x", encoding="utf-8") as handle:
@@ -202,8 +204,9 @@ class UnitPatientStateAgent(BasicAgent):
         task = processing_messages[1]["content"]
         extraction_registry = self.tool_registry
         self.tool_registry = shell_registry
+        self._register_context_reader()
         try:
-            options = {**kwargs, "tools": shell_registry.to_openai_tools()}
+            options = {**kwargs, "tools": self.tool_registry.to_openai_tools()}
             for turn in range(1, max_tool_iterations + 1):
                 response = self._invoke_response(processing_messages, **options)
                 if response.tool_calls:

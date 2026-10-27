@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from bpc_state import BPCStateExtractor, BoundedPatientTool
-from bpc_state.repository import is_present
+from bpc_state_extractor import BPCStateExtractor, BoundedPatientTool
+from bpc_state_extractor.repository import is_present
 
 
 def rows(path: Path, delimiter: str = ",") -> list[dict[str, str]]:

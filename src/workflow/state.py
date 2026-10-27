@@ -22,7 +22,7 @@ def save_json(path: Path, data):
 
 def check_state(state):
     """Validate schema, visible timing, evidence links and null annotations."""
-    from bpc_state.models import PatientState
+    from bpc_state_extractor.models import PatientState
 
     PatientState.model_validate(state)
     cutoff = state["meta"]["cutoff_day"]
@@ -91,7 +91,7 @@ def normalize_markers(state):
 
 class SharedPatientState:
     def __init__(self, *, patient_id, cutoff_day, data_dir, cancer_id=None, rules_path=None, start_day=None):
-        from bpc_state import BPCStateExtractor, BoundedPatientTool
+        from bpc_state_extractor import BPCStateExtractor, BoundedPatientTool
 
         if type(cutoff_day) is not int:
             raise ValueError("cutoff_day must be an integer")

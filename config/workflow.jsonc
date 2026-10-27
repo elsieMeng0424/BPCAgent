@@ -10,5 +10,10 @@
   "secrets_file": "secrets.local.json", // 本机密钥文件（不提交 Git）；同名环境变量优先
   "top_m": 5, // 正整数：最多输出多少个候选靶点
   "top_k": 5, // 正整数：最多输出多少个候选药物
-  "max_stage_attempts": 2 // 正整数：每阶段最多尝试次数，包含首次执行
+  "max_stage_attempts": 2, // 正整数：每阶段最多尝试次数，包含首次执行
+  "patient_shell": {
+    "mode": "sandbox", // sandbox | local | disabled; sandbox requires the existing Docker image
+    "allow_unsafe_local": false, // Must explicitly be true for local; local has host filesystem/network access
+    "sandbox": {"image": "bpcagent-sandbox:0.1"} // No auto-pull and no fallback to a host shell
+  }
 }

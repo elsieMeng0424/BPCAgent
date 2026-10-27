@@ -14,8 +14,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Run the iterative BPC task/review workflow (demo uses no API).")
     parser.add_argument("--config", help="Workflow JSON/JSONC; defaults to ./config/workflow.jsonc when present.")
     parser.add_argument("--data-dir")
-    parser.add_argument("--patient-id", required=True)
-    parser.add_argument("--cutoff-day", type=int, required=True)
+    parser.add_argument("--request", help="Natural-language task including patient ID/suffix and a relative cutoff day.")
+    parser.add_argument("--patient-id")
+    parser.add_argument("--cutoff-day", type=int)
+    parser.add_argument("--patient-only", action="store_true", help="Run PatientStateAgent plus Review only.")
     parser.add_argument("--start-day", type=int, help="Recent observation view start; earlier treatment history is retained.")
     parser.add_argument("--cancer-id")
     parser.add_argument("--rules-path")
@@ -31,9 +33,11 @@ def main(argv=None):
         options = configuration.workflow_options({key: getattr(args, key) for key in (
             "data_dir", "workspace_root", "rules_path", "mode", "top_m", "top_k", "max_stage_attempts"
         )})
-        configs = configuration.model_configs() if options["mode"] == "live" else {}
+        if args.patient_only:
+            options["plan"] = {"stages": [{"agent": "PatientStateAgent"}]}
+        configs = configuration.model_configs(plan=options["plan"]) if options["mode"] == "live" else {}
         workflow = AgentWorkflow(**options, **configs)
-        result = workflow.run(patient_id=args.patient_id, cutoff_day=args.cutoff_day,
+        result = workflow.run(args.request, patient_id=args.patient_id, cutoff_day=args.cutoff_day,
                               start_day=args.start_day, cancer_id=args.cancer_id)
         print(json.dumps({"status": result["status"], "mode": result["mode"],
                           "result": str(Path(result["task_dir"]) / "workflow_result.json")}, ensure_ascii=False))

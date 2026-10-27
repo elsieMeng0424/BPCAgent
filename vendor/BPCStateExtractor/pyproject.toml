@@ -14,14 +14,14 @@ dependencies = ["pydantic>=2.5,<3"]
 test = ["pytest>=7"]
 
 [project.scripts]
-bpc-state = "bpc_state.cli:main"
+bpc_state_extractor = "bpc_state_extractor.cli:main"
 
 [tool.setuptools]
-package-dir = {"" = "src", "bpc_state.resources" = "config"}
-packages = ["bpc_state", "bpc_state.resources"]
+package-dir = {"" = "src", "bpc_state_extractor.resources" = "config"}
+packages = ["bpc_state_extractor", "bpc_state_extractor.resources"]
 
 [tool.setuptools.package-data]
-"bpc_state.resources" = ["*.json"]
+"bpc_state_extractor.resources" = ["*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

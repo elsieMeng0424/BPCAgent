@@ -1,6 +1,10 @@
 # BPCStateExtractor
 
-[BPCStateExtractor](https://github.com/Chenshengm/BPCStateExtractor) turns the structured GENIE BPC Prostate release into a deterministic, cutoff-safe patient snapshot. It extracts and minimally standardizes documented facts; it does **not** infer missing facts, recommend treatment, or generate training labels. The distribution name remains `bpc-patient-state`, the Python package is `bpc_state`, and the CLI is `bpc-state`; renaming the repository does not change these interfaces.
+[BPCStateExtractor](https://github.com/Chenshengm/BPCStateExtractor) turns the structured GENIE BPC Prostate release into a deterministic, cutoff-safe patient snapshot. It extracts and minimally standardizes documented facts; it does **not** infer missing facts, recommend treatment, or generate training labels. Both the Python package and CLI are named `bpc_state_extractor`. The standalone distribution (pip metadata) name remains `bpc-patient-state`.
+
+Migration: replace `import bpc_state` with `import bpc_state_extractor`, and use
+`bpc_state_extractor` instead of the old `bpc-state` terminal command. No legacy aliases
+are provided. Reinstall this project after updating and restart any notebook kernels.
 
 The central contract is:
 
@@ -42,7 +46,7 @@ The release data remain under `dataset/` and are excluded from Git.
 ## Python API
 
 ```python
-from bpc_state import get_patient_state
+from bpc_state_extractor import get_patient_state
 
 state = get_patient_state(
     "GENIE-DFCI-051542",
@@ -54,7 +58,7 @@ state = get_patient_state(
 For repeated queries, reuse one extractor so local indexes are cached:
 
 ```python
-from bpc_state import BPCStateExtractor, BoundedPatientTool
+from bpc_state_extractor import BPCStateExtractor, BoundedPatientTool
 
 extractor = BPCStateExtractor("/home/u2021202188/bpc-patient-state/dataset")
 state = extractor.get_patient_state("GENIE-DFCI-051542", 220)
@@ -73,7 +77,7 @@ The convenience function also reads `BPC_DATA_DIR` when `data_dir` is omitted.
 Extract state and an optional audit sidecar:
 
 ```bash
-bpc-state --data-dir dataset state \
+bpc_state_extractor --data-dir dataset state \
   --patient-id GENIE-DFCI-051542 \
   --cutoff-day 220 \
   --output state.json \
@@ -83,7 +87,7 @@ bpc-state --data-dir dataset state \
 Resolve visible evidence metadata:
 
 ```bash
-bpc-state --data-dir dataset evidence \
+bpc_state_extractor --data-dir dataset evidence \
   --patient-id GENIE-DFCI-051542 \
   --cutoff-day 220 \
   --ref YOUR_VISIBLE_EVIDENCE_REF
@@ -92,8 +96,8 @@ bpc-state --data-dir dataset evidence \
 Export schemas:
 
 ```bash
-bpc-state schema --output schemas/patient-state.schema.json
-bpc-state tool-schema \
+bpc_state_extractor schema --output schemas/patient-state.schema.json
+bpc_state_extractor tool-schema \
   --patient-id GENIE-DFCI-051542 \
   --max-cutoff-day 220 \
   --output schemas/example-bound-tools.json
@@ -126,7 +130,7 @@ Agent input contains only the PatientState available by the inclusive cutoff. Ac
 
 ```bash
 mkdir -p offline_evaluation
-bpc-state --data-dir dataset evaluation \
+bpc_state_extractor --data-dir dataset evaluation \
   --patient-id GENIE-DFCI-051542 \
   --cutoff-day 220 --end-day 260 \
   --output offline_evaluation/followup.json
@@ -135,7 +139,7 @@ bpc-state --data-dir dataset evaluation \
 The `evaluation` command requires a separate output file. The corresponding Python interface is intentionally in its own module:
 
 ```python
-from bpc_state.evaluation import OfflineEvaluationExporter
+from bpc_state_extractor.evaluation import OfflineEvaluationExporter
 
 evaluation = OfflineEvaluationExporter("dataset").export(
     "GENIE-DFCI-051542", cutoff_day=220, end_day=260,
@@ -192,7 +196,7 @@ The latest verification with the local release completed **94 tests passed, with
 
 Additional tests in `test_missing_semantics.py` and `test_evaluation.py` check explicit null/status semantics, zero, missing/invalid numeric values, evaluation-window endpoints, late results, evidence pruning, input fingerprinting, and Agent-boundary isolation.
 
-The same rules file is packaged as `bpc_state.resources/field_rules.json`, so normal wheel installations work outside this checkout. Custom rules can be supplied via `BPCStateExtractor(data_dir, rules_path=...)` or the CLI's global `--rules-path` option. Allowlists are applied before extraction and evidence creation; global forbidden fields override an allowlist entry. Time rules execute a restricted list of direct, DOB-relative, or cancer-relative field transforms and optional nonnegative `reporting_delay_days`. No arbitrary expression evaluation is used. Raw drug/unit/TMB/CNA preservation policies are fixed safety policies; unsupported alternatives fail explicitly.
+The same rules file is packaged as `bpc_state_extractor.resources/field_rules.json`, so normal wheel installations work outside this checkout. Custom rules can be supplied via `BPCStateExtractor(data_dir, rules_path=...)` or the CLI's global `--rules-path` option. Allowlists are applied before extraction and evidence creation; global forbidden fields override an allowlist entry. Time rules execute a restricted list of direct, DOB-relative, or cancer-relative field transforms and optional nonnegative `reporting_delay_days`. No arbitrary expression evaluation is used. Raw drug/unit/TMB/CNA preservation policies are fixed safety policies; unsupported alternatives fail explicitly.
 
 Version 1.1 changes evidence IDs from sequential numbers to stable hashes and removes the ambiguous radiotherapy `dose_raw`, final fraction count, and final duration fields. Consumers should regenerate old examples and tool schemas.
 

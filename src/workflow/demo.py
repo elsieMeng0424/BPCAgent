@@ -17,9 +17,14 @@ class DemoLLM:
         self.tool_step = 0
 
     def invoke(self, messages, **kwargs):
+        """Return one scripted model response without making a network request.
+
+        Match LLM.invoke's interface; the Agent still executes the requested tools.
+        Several calls to this method normally occur within a single Agent turn.
+        """
         self.tool_step += 1
         if self.tool_step == 1:
-            calls = [("get_patient_state" if self.role == "PatientStateAgent" else "get_shared_patient_state", {}),
+            calls = [("bpc_state_extractor" if self.role == "PatientStateAgent" else "get_shared_patient_state", {}),
                      ("get_stage_context", {})]
         elif self.tool_step == 2:
             calls = [("state_check", {})] if self.role == "PatientStateAgent" else [
@@ -29,7 +34,7 @@ class DemoLLM:
             if self.role == "PatientStateAgent":
                 results = [json.loads(m["content"]) for m in messages if m["role"] == "tool"]
                 extracted = next((r["data"] for r in results
-                                  if r["tool_name"] == "get_patient_state" and r["status"] == "success"), None)
+                                  if r["tool_name"] in {"get_patient_state", "bpc_state_extractor"} and r["status"] == "success"), None)
                 refs = list(extracted["patient_state"]["evidence_refs"]) if extracted else []
                 if refs:
                     calls.append(("get_patient_evidence", {"evidence_refs": refs[:1]}))

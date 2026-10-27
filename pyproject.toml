@@ -9,7 +9,7 @@ description = "A minimal Python framework for agents and tool calling."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "openai>=1.30,<3",
+    "openai>=1.66,<3",
     "pydantic>=2.7,<3",
 ]
 classifiers = [
@@ -21,8 +21,19 @@ classifiers = [
 [project.optional-dependencies]
 examples = ["python-dotenv>=1,<2"]
 dev = ["build>=1,<2"]
+test = ["pytest>=7,<9"]
+
+[project.scripts]
+bpc-workflow = "bpcagent.workflow.cli:main"
+bpc-state = "bpc_state.cli:main"
 
 [tool.setuptools]
-package-dir = {"bpcagent" = "src"}
-packages = ["bpcagent", "bpcagent.agents", "bpcagent.tools", "bpcagent.sandbox", "bpcagent.tasks"]
+package-dir = {"bpcagent" = "src", "bpc_state" = "vendor/BPCStateExtractor/src/bpc_state", "bpc_state.resources" = "vendor/BPCStateExtractor/config"}
+packages = ["bpcagent", "bpcagent.agents", "bpcagent.tools", "bpcagent.sandbox", "bpcagent.tasks", "bpcagent.workflow", "bpc_state", "bpc_state.resources"]
 include-package-data = false
+
+[tool.setuptools.package-data]
+"bpc_state.resources" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "vendor/BPCStateExtractor/tests"]

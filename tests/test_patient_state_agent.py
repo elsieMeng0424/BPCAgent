@@ -1,107 +1,143 @@
-"""患者数据提取流程：只按工具执行结果判断完成，不生成分析。"""
+"""The sole PatientStateAgent integrates extraction artifacts and workflow checks."""
 
+from contextlib import redirect_stdout
+import io
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from bpcagent import Config, LLMResponse, PatientStateAgent, ToolCall
-from bpcagent.tools.bpc_patient import PatientArtifactStore, PatientEvidenceTool, PatientStateTool
+from bpcagent import Config, LLMResponse, PatientStateAgent
+from bpcagent.workflow import AgentWorkflow, PatientStateAgent as WorkflowPatientStateAgent
+from bpcagent.workflow.demo import DemoLLM
+from bpcagent.workflow.state import SharedPatientState
 
-
-def tool_response(name, arguments, call_id):
-    return LLMResponse(tool_calls=[ToolCall(
-        id=call_id, name=name, arguments=arguments,
-    )], finish_reason="tool_calls")
-
-
-def state_response(day=220):
-    return tool_response("get_patient_state", f'{{"cutoff_day": {day}}}', "state")
-
-
-def evidence_response(day=220):
-    return tool_response("get_patient_evidence", f'{{"cutoff_day": {day}, "evidence_refs": ["E-test"]}}', "evidence")
+if __package__:
+    from .test_workflow import fixture_dataset
+else:
+    from test_workflow import fixture_dataset
 
 
 class PatientStateAgentTests(unittest.TestCase):
     def setUp(self):
-        self.temp = TemporaryDirectory()
-        self.addCleanup(self.temp.cleanup)
-        self.directory = Path(self.temp.name)
-        self.bound = SimpleNamespace(
-            patient_id="P1", cancer_id=None, max_cutoff_day=220,
-            get_patient_state=Mock(return_value={"evidence_refs": {"E-test": {}}}),
-            get_evidence=Mock(return_value={"E-test": {"sources": []}}),
-        )
-        store = PatientArtifactStore(self.directory)
-        tools = (PatientStateTool(self.bound, store), PatientEvidenceTool(self.bound, store))
-        self.llm = Mock()
-        with patch("bpcagent.agents.patient_state.create_patient_tools", return_value=tools):
-            self.agent = PatientStateAgent(
-                patient_id="P1", cutoff_day=220, data_dir="unused", work_dir=self.directory,
-                llm=self.llm, config=Config.resolve(environ={}, overrides={"max_tool_iterations": 3}),
-            )
-        log_patcher = patch.object(self.agent, "_save_history")
-        self.log = log_patcher.start()
-        self.addCleanup(log_patcher.stop)
+        temp = TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        self.data = fixture_dataset(self.root / "data")
+        self.shared = SharedPatientState(patient_id="P1", cutoff_day=50, data_dir=self.data)
+        stdout = redirect_stdout(io.StringIO())
+        stdout.__enter__()
+        self.addCleanup(stdout.__exit__, None, None, None)
 
-    def test_stops_after_two_tools_without_analysis_request(self):
-        self.llm.invoke.side_effect = [state_response(), evidence_response()]
-        result = self.agent.run()
+    def agent(self, *, directory="turn", shared=None, llm=None):
+        return PatientStateAgent(shared=shared or self.shared, context={"stage": "PatientStateAgent"},
+                                 directory=self.root / directory, config=Config(max_tool_iterations=8),
+                                 llm=llm or DemoLLM("PatientStateAgent"))
+
+    def prepare(self, agent):
+        payload = agent.extract()
+        agent.get_context()
+        agent.state_check()
+        return list(payload["patient_state"]["evidence_refs"])
+
+    def test_only_one_public_patient_agent(self):
+        import bpcagent.agents as backbone
+        self.assertIs(PatientStateAgent, WorkflowPatientStateAgent)
+        self.assertFalse(hasattr(backbone, "PatientStateAgent"))
+        self.assertFalse((Path(__file__).resolve().parents[1] / "src/agents/patient_state.py").exists())
+
+    def test_demo_saves_bounded_state_and_evidence_before_submission(self):
+        agent = self.agent()
+        result = agent.run("Extract, check and submit")
         self.assertTrue(result.finished)
-        self.assertEqual(self.llm.invoke.call_count, 2)
-        self.assertIn("Patient data extraction completed", result.output["text"])
-        self.assertEqual(result.transcript[-1]["role"], "tool")
-        self.assertEqual(len(list(self.directory.glob("*.json"))), 2)
-        self.assertFalse((self.directory / "answer.json").exists())
-        self.log.assert_called_once()
+        self.assertIsNotNone(agent.submitted)
+        state = json.loads(Path(agent.artifacts["state"]).read_text())
+        evidence = json.loads(Path(agent.artifacts["evidence"][0]).read_text())
+        self.assertEqual(state, self.shared.read()["patient_state"])
+        self.assertEqual(evidence["cutoff_day"], 50)
+        self.assertEqual(evidence["patient_id"], "P1")
+        self.assertEqual(evidence["status"], "retrieved")
+        self.assertEqual(evidence["data"], {ref: state["evidence_refs"][ref] for ref in evidence["evidence_refs"]})
+        self.assertTrue((agent.directory / "transcript.json").exists())
 
-    def test_text_answer_is_not_successful_extraction(self):
-        self.llm.invoke.return_value = LLMResponse(content="Here is a clinical analysis", finish_reason="stop")
-        result = self.agent.run()
-        self.assertFalse(result.finished)
-        self.assertEqual(result.output, {})
-        self.assertEqual(result.info["stop_reason"], "incomplete_extraction")
-        self.assertEqual(list(self.directory.iterdir()), [])
+    def test_text_without_tools_cannot_complete_extraction(self):
+        llm = Mock(invoke=Mock(return_value=LLMResponse(content="Done", finish_reason="stop")))
+        workflow = AgentWorkflow(data_dir=self.data, workspace_root=self.root / "runs",
+                                 plan={"stages": [{"agent": "PatientStateAgent"}]},
+                                 llm_factory=lambda role: llm if role == "PatientStateAgent" else DemoLLM(role))
+        result = workflow.run(patient_id="P1", cutoff_day=50)
+        self.assertFalse(result["finished"])
+        self.assertEqual(result["turns"][0]["status"], "failed")
+        self.assertEqual(result["turns"][0]["artifacts"], {})
 
-    def test_extraction_preserves_reasoning_between_tool_calls(self):
-        state = state_response().model_copy(update={"reasoning_content": "先提取 state。"})
-        evidence = evidence_response().model_copy(update={"reasoning_content": "再提取 evidence。"})
+    def test_cached_state_does_not_count_as_this_turn_extraction(self):
+        self.shared.extract()
+        agent = self.agent()
+        agent.get_shared()
+        agent.get_context()
+        agent.state_check()
+        with self.assertRaisesRegex(ValueError, "get_patient_state"):
+            agent.submit({"summary": "done", "limitations": []})
+        with self.assertRaisesRegex(ValueError, "get_patient_state"):
+            agent.get_evidence([next(iter(self.shared.read()["patient_state"]["evidence_refs"]))])
 
-        def invoke(messages, **kwargs):
-            if self.llm.invoke.call_count == 1:
-                return state
-            self.assertEqual(messages[-2]["reasoning_content"], state.reasoning_content)
-            return evidence
+    def test_failed_evidence_query_or_write_cannot_enable_submission(self):
+        agent = self.agent()
+        refs = self.prepare(agent)
+        with patch.object(self.shared, "get_evidence", side_effect=OSError("read failed")):
+            result = agent.tool_registry.execute_tool("get_patient_evidence", {"evidence_refs": refs[:1]})
+            self.assertEqual(result.status, "error")
+        with patch.object(agent.patient_store, "save", side_effect=OSError("write failed")):
+            result = agent.tool_registry.execute_tool("get_patient_evidence", {"evidence_refs": refs[:1]})
+            self.assertEqual(result.status, "error")
+        with self.assertRaisesRegex(ValueError, "get_patient_evidence"):
+            agent.submit({"summary": "done", "limitations": []})
+        agent.get_evidence(refs[:1])
+        agent.submit({"summary": "done", "limitations": []})
 
-        self.llm.invoke.side_effect = invoke
-        result = self.agent.run()
-        self.assertTrue(result.finished)
-        self.assertEqual([m["reasoning_content"] for m in result.transcript
-                          if m["role"] == "assistant"],
-                         [state.reasoning_content, evidence.reasoning_content])
+    def test_failed_state_write_does_not_count_as_extraction(self):
+        agent = self.agent()
+        with patch.object(agent.patient_store, "save", side_effect=OSError("write failed")):
+            result = agent.tool_registry.execute_tool("get_patient_state", {})
+        self.assertEqual(result.status, "error")
+        self.assertFalse(agent.state_saved)
+        self.assertEqual(agent.artifacts, {})
 
-    def test_failed_tool_can_be_corrected_before_completion(self):
-        self.bound.get_evidence.side_effect = [OSError("write failed"), {"E-test": {}}]
-        self.llm.invoke.side_effect = [state_response(), evidence_response(), evidence_response()]
-        result = self.agent.run()
-        self.assertTrue(result.finished)
-        self.assertEqual(self.llm.invoke.call_count, 3)
-        self.assertEqual(len(list(self.directory.glob("*.json"))), 2)
+    def test_empty_evidence_snapshot_saves_explicit_empty_artifact(self):
+        payload = {"patient_state": {"meta": {"patient_id": "P0", "target_cancer_id": None}, "evidence_refs": {}},
+                   "state_check": {"complete": False}, "normalized_markers": []}
+        shared = SimpleNamespace(cutoff_day=50, ready=True, extract=lambda: payload, read=lambda: payload)
+        agent = self.agent(shared=shared)
+        self.prepare(agent)
+        agent.submit({"summary": "no evidence", "limitations": ["No evidence references in snapshot"]})
+        evidence = json.loads(Path(agent.artifacts["evidence"][0]).read_text())
+        self.assertEqual(evidence["status"], "no_evidence_refs")
+        self.assertEqual(evidence["data"], {})
 
-    def test_other_date_does_not_complete_target_task(self):
-        self.llm.invoke.side_effect = [state_response(219), evidence_response(219)]
-        result = self.agent.run(max_tool_iterations=2)
-        self.assertFalse(result.finished)
-        self.assertEqual(result.info["stop_reason"], "step_limit_exceeded")
+    def test_evidence_batches_and_retries_keep_separate_artifacts(self):
+        first = self.agent(directory="first")
+        refs = self.prepare(first)
+        first.get_evidence(refs[:1])
+        first.get_evidence(refs[-1:])
+        paths = first.artifacts["evidence"]
+        self.assertEqual(len(set(paths)), 2)
+        self.assertTrue(all(Path(path).exists() for path in paths))
+        first.submit({"summary": "done", "limitations": []})
+        second = self.agent(directory="retry")
+        self.prepare(second)
+        with self.assertRaisesRegex(ValueError, "get_patient_evidence"):
+            second.submit({"summary": "done", "limitations": []})
+        self.assertNotEqual(first.artifacts["state"], second.artifacts["state"])
 
-    def test_previous_run_does_not_count_as_current_completion(self):
-        self.llm.invoke.side_effect = [state_response(), evidence_response()]
-        self.assertTrue(self.agent.run().finished)
-        self.llm.invoke.side_effect = [LLMResponse(content="Done", finish_reason="stop")]
-        self.assertFalse(self.agent.run().finished)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_patient_only_workflow_still_reviews_and_exposes_artifacts(self):
+        workflow = AgentWorkflow(data_dir=self.data, workspace_root=self.root / "runs",
+                                 plan={"stages": [{"agent": "PatientStateAgent"}]})
+        result = workflow.run(patient_id="P1", cutoff_day=50)
+        self.assertTrue(result["finished"])
+        self.assertEqual([turn["agent"] for turn in result["turns"]], ["PatientStateAgent", "ReviewAgent"])
+        artifacts = result["turns"][0]["artifacts"]
+        directory = Path(result["task_dir"])
+        self.assertTrue((directory / artifacts["state"]).is_file())
+        self.assertTrue((directory / artifacts["evidence"][0]).is_file())

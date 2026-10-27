@@ -1,0 +1,1879 @@
+{
+  "$defs": {
+    "BiomarkerResult": {
+      "additionalProperties": false,
+      "properties": {
+        "biomarker": {
+          "enum": [
+            "PD-L1",
+            "MSI",
+            "MMR"
+          ],
+          "title": "Biomarker",
+          "type": "string"
+        },
+        "test_number": {
+          "title": "Test Number",
+          "type": "integer"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "biomarker_report_date",
+          "default": "biomarker_report_date",
+          "enum": [
+            "biomarker_report_date"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "test_reported_raw": {
+          "title": "Test Reported Raw",
+          "type": "string"
+        },
+        "result_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Raw"
+        },
+        "details_raw": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Details Raw",
+          "type": "object"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "biomarker",
+        "test_number",
+        "event_day",
+        "available_day",
+        "test_reported_raw",
+        "evidence_refs"
+      ],
+      "title": "BiomarkerResult",
+      "type": "object"
+    },
+    "BiomarkerTesting": {
+      "additionalProperties": false,
+      "properties": {
+        "biomarker": {
+          "enum": [
+            "PD-L1",
+            "MSI",
+            "MMR"
+          ],
+          "title": "Biomarker",
+          "type": "string"
+        },
+        "test_number": {
+          "title": "Test Number",
+          "type": "integer"
+        },
+        "reported_raw": {
+          "title": "Reported Raw",
+          "type": "string"
+        },
+        "meaning": {
+          "const": "not_reported_on_pathology_report",
+          "default": "not_reported_on_pathology_report",
+          "enum": [
+            "not_reported_on_pathology_report"
+          ],
+          "title": "Meaning",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "default": "procedure_date_proxy",
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "biomarker",
+        "test_number",
+        "reported_raw",
+        "event_day",
+        "available_day",
+        "evidence_refs"
+      ],
+      "title": "BiomarkerTesting",
+      "type": "object"
+    },
+    "CancerContext": {
+      "additionalProperties": false,
+      "properties": {
+        "target_cancer_id": {
+          "title": "Target Cancer Id",
+          "type": "string"
+        },
+        "diagnosis": {
+          "$ref": "#/$defs/TimedValue"
+        },
+        "site_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Site Raw"
+        },
+        "histology_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Histology Raw"
+        },
+        "known_cancers": {
+          "items": {
+            "$ref": "#/$defs/CancerDescriptor"
+          },
+          "title": "Known Cancers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "target_cancer_id",
+        "diagnosis"
+      ],
+      "title": "CancerContext",
+      "type": "object"
+    },
+    "CancerDescriptor": {
+      "additionalProperties": false,
+      "properties": {
+        "cancer_id": {
+          "title": "Cancer Id",
+          "type": "string"
+        },
+        "ca_seq_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ca Seq Raw"
+        },
+        "index_status": {
+          "enum": [
+            "index",
+            "non_index"
+          ],
+          "title": "Index Status",
+          "type": "string"
+        },
+        "diagnosis": {
+          "$ref": "#/$defs/TimedValue"
+        },
+        "site_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Site Raw"
+        },
+        "histology_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Histology Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "cancer_id",
+        "index_status",
+        "diagnosis",
+        "evidence_refs"
+      ],
+      "title": "CancerDescriptor",
+      "type": "object"
+    },
+    "CopyNumberAlteration": {
+      "additionalProperties": false,
+      "properties": {
+        "gene": {
+          "title": "Gene",
+          "type": "string"
+        },
+        "value_raw": {
+          "title": "Value Raw",
+          "type": "string"
+        },
+        "value_numeric": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Numeric"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "gene",
+        "value_raw",
+        "evidence_refs"
+      ],
+      "title": "CopyNumberAlteration",
+      "type": "object"
+    },
+    "CurrentSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "latest_imaging": {
+          "items": {
+            "$ref": "#/$defs/LatestImaging"
+          },
+          "title": "Latest Imaging",
+          "type": "array"
+        },
+        "latest_tumor_markers": {
+          "items": {
+            "$ref": "#/$defs/LatestTumorMarker"
+          },
+          "title": "Latest Tumor Markers",
+          "type": "array"
+        }
+      },
+      "title": "CurrentSummary",
+      "type": "object"
+    },
+    "Demographics": {
+      "additionalProperties": false,
+      "properties": {
+        "birth_year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Birth Year"
+        },
+        "sex_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex Raw"
+        },
+        "race_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Race Raw"
+        },
+        "ethnicity_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ethnicity Raw"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Institution"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "title": "Demographics",
+      "type": "object"
+    },
+    "EvidenceRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/EvidenceSource"
+          },
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sources"
+      ],
+      "title": "EvidenceRecord",
+      "type": "object"
+    },
+    "EvidenceSource": {
+      "additionalProperties": false,
+      "properties": {
+        "source_file": {
+          "title": "Source File",
+          "type": "string"
+        },
+        "record_ref": {
+          "title": "Record Ref",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "values": {
+          "title": "Values",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_file",
+        "record_ref",
+        "fields"
+      ],
+      "title": "EvidenceSource",
+      "type": "object"
+    },
+    "FieldStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "unknown",
+            "not_recorded",
+            "not_reported",
+            "not_tested",
+            "not_detected",
+            "not_applicable",
+            "not_collected",
+            "invalid",
+            "non_exact",
+            "excluded_by_policy",
+            "not_normalized",
+            "masked"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "reason"
+      ],
+      "title": "FieldStatus",
+      "type": "object"
+    },
+    "ImagingObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "imaging_id": {
+          "title": "Imaging Id",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "scan_date_proxy",
+          "default": "scan_date_proxy",
+          "enum": [
+            "scan_date_proxy"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "modality_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Modality Raw"
+        },
+        "sites_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sites Raw"
+        },
+        "cancer_evidence_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Evidence Raw"
+        },
+        "assessment_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment Raw"
+        },
+        "assessment": {
+          "anyOf": [
+            {
+              "enum": [
+                "responding",
+                "stable",
+                "progressing",
+                "indeterminate",
+                "other"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "imaging_id",
+        "event_day",
+        "available_day",
+        "evidence_refs"
+      ],
+      "title": "ImagingObservation",
+      "type": "object"
+    },
+    "LastTreatmentEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "start",
+            "end"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "title": "Available Day Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "event_day",
+        "available_day",
+        "available_day_basis"
+      ],
+      "title": "LastTreatmentEvent",
+      "type": "object"
+    },
+    "LatestImaging": {
+      "additionalProperties": false,
+      "properties": {
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "assessment_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment Raw"
+        },
+        "assessment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "event_day",
+        "evidence_refs"
+      ],
+      "title": "LatestImaging",
+      "type": "object"
+    },
+    "LatestTumorMarker": {
+      "additionalProperties": false,
+      "properties": {
+        "analyte_raw": {
+          "title": "Analyte Raw",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "value_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Raw"
+        },
+        "value_numeric": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Numeric"
+        },
+        "unit_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "analyte_raw",
+        "event_day",
+        "evidence_refs"
+      ],
+      "title": "LatestTumorMarker",
+      "type": "object"
+    },
+    "MedOncObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "med_onc_id": {
+          "title": "Med Onc Id",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "visit_date_proxy",
+          "default": "visit_date_proxy",
+          "enum": [
+            "visit_date_proxy"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "cancer_type_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Type Raw"
+        },
+        "prostate_status_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prostate Status Raw"
+        },
+        "psa_trend_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Psa Trend Raw"
+        },
+        "cancer_evidence_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Evidence Raw"
+        },
+        "assessment_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "med_onc_id",
+        "event_day",
+        "available_day",
+        "evidence_refs"
+      ],
+      "title": "MedOncObservation",
+      "type": "object"
+    },
+    "MissingInformation": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "record_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Record Ref"
+        }
+      },
+      "required": [
+        "field",
+        "reason"
+      ],
+      "title": "MissingInformation",
+      "type": "object"
+    },
+    "MolecularCoverage": {
+      "additionalProperties": false,
+      "properties": {
+        "mutation": {
+          "enum": [
+            "profiled",
+            "not_profiled",
+            "unresolved"
+          ],
+          "title": "Mutation",
+          "type": "string"
+        },
+        "cna": {
+          "enum": [
+            "profiled",
+            "not_profiled",
+            "unresolved"
+          ],
+          "title": "Cna",
+          "type": "string"
+        },
+        "sv": {
+          "enum": [
+            "profiled",
+            "not_profiled",
+            "unresolved"
+          ],
+          "title": "Sv",
+          "type": "string"
+        },
+        "panel_gene_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Panel Gene Count"
+        },
+        "cna_missing_genes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cna Missing Genes",
+          "type": "array"
+        },
+        "cna_neutral_genes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cna Neutral Genes",
+          "type": "array"
+        },
+        "issues": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mutation",
+        "cna",
+        "sv"
+      ],
+      "title": "MolecularCoverage",
+      "type": "object"
+    },
+    "MolecularReport": {
+      "additionalProperties": false,
+      "properties": {
+        "molecular_report_id": {
+          "title": "Molecular Report Id",
+          "type": "string"
+        },
+        "sample_id": {
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "cancer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Id"
+        },
+        "cancer_association": {
+          "enum": [
+            "target",
+            "other",
+            "ambiguous"
+          ],
+          "title": "Cancer Association",
+          "type": "string"
+        },
+        "collection_day": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collection Day"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "ngs_report_date",
+          "default": "ngs_report_date",
+          "enum": [
+            "ngs_report_date"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "panel_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Panel Id"
+        },
+        "sample_type_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Type Raw"
+        },
+        "mutations": {
+          "items": {
+            "$ref": "#/$defs/Mutation"
+          },
+          "title": "Mutations",
+          "type": "array"
+        },
+        "copy_number_alterations": {
+          "items": {
+            "$ref": "#/$defs/CopyNumberAlteration"
+          },
+          "title": "Copy Number Alterations",
+          "type": "array"
+        },
+        "structural_variants": {
+          "items": {
+            "$ref": "#/$defs/StructuralVariant"
+          },
+          "title": "Structural Variants",
+          "type": "array"
+        },
+        "tmb": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TMBResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "coverage": {
+          "$ref": "#/$defs/MolecularCoverage"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "molecular_report_id",
+        "sample_id",
+        "cancer_association",
+        "available_day",
+        "coverage",
+        "evidence_refs"
+      ],
+      "title": "MolecularReport",
+      "type": "object"
+    },
+    "Mutation": {
+      "additionalProperties": false,
+      "properties": {
+        "gene": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gene"
+        },
+        "protein_change": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protein Change"
+        },
+        "variant_classification_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variant Classification Raw"
+        },
+        "chromosome_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chromosome Raw"
+        },
+        "start_position_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Position Raw"
+        },
+        "reference_allele_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Allele Raw"
+        },
+        "tumor_allele_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tumor Allele Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "evidence_refs"
+      ],
+      "title": "Mutation",
+      "type": "object"
+    },
+    "Observations": {
+      "additionalProperties": false,
+      "properties": {
+        "imaging": {
+          "items": {
+            "$ref": "#/$defs/ImagingObservation"
+          },
+          "title": "Imaging",
+          "type": "array"
+        },
+        "med_onc": {
+          "items": {
+            "$ref": "#/$defs/MedOncObservation"
+          },
+          "title": "Med Onc",
+          "type": "array"
+        },
+        "tumor_markers": {
+          "items": {
+            "$ref": "#/$defs/TumorMarkerObservation"
+          },
+          "title": "Tumor Markers",
+          "type": "array"
+        }
+      },
+      "title": "Observations",
+      "type": "object"
+    },
+    "PathologyReport": {
+      "additionalProperties": false,
+      "properties": {
+        "pathology_id": {
+          "title": "Pathology Id",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "procedure_date_proxy",
+          "default": "procedure_date_proxy",
+          "enum": [
+            "procedure_date_proxy"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "procedure_type_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Procedure Type Raw"
+        },
+        "procedure_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Procedure Raw"
+        },
+        "invasive_cancer_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invasive Cancer Raw"
+        },
+        "gleason_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gleason Raw"
+        },
+        "biomarkers": {
+          "items": {
+            "$ref": "#/$defs/BiomarkerResult"
+          },
+          "title": "Biomarkers",
+          "type": "array"
+        },
+        "biomarker_testing": {
+          "items": {
+            "$ref": "#/$defs/BiomarkerTesting"
+          },
+          "title": "Biomarker Testing",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "pathology_id",
+        "event_day",
+        "available_day",
+        "evidence_refs"
+      ],
+      "title": "PathologyReport",
+      "type": "object"
+    },
+    "Radiotherapy": {
+      "additionalProperties": false,
+      "properties": {
+        "radiotherapy_id": {
+          "title": "Radiotherapy Id",
+          "type": "string"
+        },
+        "cancer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Id"
+        },
+        "cancer_association": {
+          "enum": [
+            "target",
+            "other",
+            "ambiguous"
+          ],
+          "title": "Cancer Association",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "type_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type Raw"
+        },
+        "site_values_raw": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Site Values Raw",
+          "type": "object"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "radiotherapy_id",
+        "cancer_association",
+        "event_day",
+        "available_day",
+        "available_day_basis",
+        "evidence_refs"
+      ],
+      "title": "Radiotherapy",
+      "type": "object"
+    },
+    "StateMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "patient_id": {
+          "title": "Patient Id",
+          "type": "string"
+        },
+        "cohort": {
+          "title": "Cohort",
+          "type": "string"
+        },
+        "target_cancer_id": {
+          "title": "Target Cancer Id",
+          "type": "string"
+        },
+        "cutoff_day": {
+          "title": "Cutoff Day",
+          "type": "integer"
+        },
+        "day_origin": {
+          "const": "first_bpc_cancer_diagnosis",
+          "default": "first_bpc_cancer_diagnosis",
+          "enum": [
+            "first_bpc_cancer_diagnosis"
+          ],
+          "title": "Day Origin",
+          "type": "string"
+        },
+        "availability_policy": {
+          "const": "documented_or_proxy",
+          "default": "documented_or_proxy",
+          "enum": [
+            "documented_or_proxy"
+          ],
+          "title": "Availability Policy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "patient_id",
+        "cohort",
+        "target_cancer_id",
+        "cutoff_day"
+      ],
+      "title": "StateMeta",
+      "type": "object"
+    },
+    "StructuralVariant": {
+      "additionalProperties": false,
+      "properties": {
+        "gene_1_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gene 1 Raw"
+        },
+        "gene_2_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gene 2 Raw"
+        },
+        "class_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Class Raw"
+        },
+        "annotation_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Annotation Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "evidence_refs"
+      ],
+      "title": "StructuralVariant",
+      "type": "object"
+    },
+    "TMBResult": {
+      "additionalProperties": false,
+      "properties": {
+        "value_raw": {
+          "title": "Value Raw",
+          "type": "string"
+        },
+        "unit": {
+          "const": "unconfirmed_source_unit",
+          "default": "unconfirmed_source_unit",
+          "enum": [
+            "unconfirmed_source_unit"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "bin_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bin Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "value_raw",
+        "evidence_refs"
+      ],
+      "title": "TMBResult",
+      "type": "object"
+    },
+    "TimedValue": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "title": "Value"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "value",
+        "event_day",
+        "available_day",
+        "available_day_basis",
+        "evidence_refs"
+      ],
+      "title": "TimedValue",
+      "type": "object"
+    },
+    "Treatment": {
+      "additionalProperties": false,
+      "properties": {
+        "treatment_id": {
+          "title": "Treatment Id",
+          "type": "string"
+        },
+        "regimen_id": {
+          "title": "Regimen Id",
+          "type": "string"
+        },
+        "cancer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Id"
+        },
+        "cancer_association": {
+          "enum": [
+            "target",
+            "other",
+            "ambiguous"
+          ],
+          "title": "Cancer Association",
+          "type": "string"
+        },
+        "drug_name_raw": {
+          "title": "Drug Name Raw",
+          "type": "string"
+        },
+        "drug_name_normalized": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Drug Name Normalized"
+        },
+        "start_day": {
+          "title": "Start Day",
+          "type": "integer"
+        },
+        "end_day": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Day"
+        },
+        "end_day_basis": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Day Basis"
+        },
+        "status_at_cutoff": {
+          "enum": [
+            "ended",
+            "unknown"
+          ],
+          "title": "Status At Cutoff",
+          "type": "string"
+        },
+        "duration_masked": {
+          "default": false,
+          "title": "Duration Masked",
+          "type": "boolean"
+        },
+        "last_known_treatment_event": {
+          "$ref": "#/$defs/LastTreatmentEvent"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "treatment_id",
+        "regimen_id",
+        "cancer_association",
+        "drug_name_raw",
+        "start_day",
+        "status_at_cutoff",
+        "last_known_treatment_event",
+        "evidence_refs"
+      ],
+      "title": "Treatment",
+      "type": "object"
+    },
+    "TumorMarkerObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "tumor_marker_id": {
+          "title": "Tumor Marker Id",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "collection_date_proxy",
+          "default": "collection_date_proxy",
+          "enum": [
+            "collection_date_proxy"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "analyte_raw": {
+          "title": "Analyte Raw",
+          "type": "string"
+        },
+        "value_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Raw"
+        },
+        "value_numeric": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Numeric"
+        },
+        "unit_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Raw"
+        },
+        "normal_range_lower_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normal Range Lower Raw"
+        },
+        "normal_range_upper_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normal Range Upper Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tumor_marker_id",
+        "event_day",
+        "available_day",
+        "analyte_raw",
+        "evidence_refs"
+      ],
+      "title": "TumorMarkerObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "$ref": "#/$defs/StateMeta"
+    },
+    "demographics": {
+      "$ref": "#/$defs/Demographics"
+    },
+    "cancer_context": {
+      "$ref": "#/$defs/CancerContext"
+    },
+    "treatment_history": {
+      "items": {
+        "$ref": "#/$defs/Treatment"
+      },
+      "title": "Treatment History",
+      "type": "array"
+    },
+    "radiotherapy_history": {
+      "items": {
+        "$ref": "#/$defs/Radiotherapy"
+      },
+      "title": "Radiotherapy History",
+      "type": "array"
+    },
+    "pathology": {
+      "items": {
+        "$ref": "#/$defs/PathologyReport"
+      },
+      "title": "Pathology",
+      "type": "array"
+    },
+    "molecular_reports": {
+      "items": {
+        "$ref": "#/$defs/MolecularReport"
+      },
+      "title": "Molecular Reports",
+      "type": "array"
+    },
+    "observations": {
+      "$ref": "#/$defs/Observations"
+    },
+    "current_summary": {
+      "$ref": "#/$defs/CurrentSummary"
+    },
+    "missing_information": {
+      "items": {
+        "$ref": "#/$defs/MissingInformation"
+      },
+      "title": "Missing Information",
+      "type": "array"
+    },
+    "evidence_refs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/EvidenceRecord"
+      },
+      "title": "Evidence Refs",
+      "type": "object"
+    },
+    "field_status": {
+      "additionalProperties": {
+        "$ref": "#/$defs/FieldStatus"
+      },
+      "title": "Field Status",
+      "type": "object"
+    }
+  },
+  "required": [
+    "meta",
+    "demographics",
+    "cancer_context",
+    "observations",
+    "current_summary"
+  ],
+  "title": "PatientState",
+  "type": "object"
+}

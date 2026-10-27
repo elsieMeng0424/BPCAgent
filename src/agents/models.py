@@ -15,7 +15,7 @@ _UNSET = object()
 class LLM:
     """模型客户端，显式构造参数优先于 Config 和环境变量。"""
 
-    _REQUEST_FIELDS = {"temperature", "max_tokens", "timeout"}
+    _REQUEST_FIELDS = {"temperature", "max_tokens", "timeout", "reasoning_effort"}
     # 配置字段由 Config 管理，仅允许三个请求级字段被单次调用覆盖。
     _RESERVED_FIELDS = (set(Config.model_fields) - _REQUEST_FIELDS) | {
         "messages", "stream", "config",
@@ -23,7 +23,7 @@ class LLM:
 
     def __init__(self, model: Optional[str] = None, api_key: Optional[str] = None,
                  base_url: Optional[str] = None, temperature=_UNSET,
-                 max_tokens=_UNSET, timeout=_UNSET, *, config: Optional[Config] = None,
+                 max_tokens=_UNSET, timeout=_UNSET, reasoning_effort=_UNSET, *, config: Optional[Config] = None,
                  **kwargs):
         """解析配置并创建客户端，额外关键字参数作为模型请求的默认参数。"""
         overrides = {name: value for name, value in (
@@ -31,7 +31,7 @@ class LLM:
         ) if value is not None}
         # 区分未传入与显式 None，后者表示省略可选请求参数。
         for name, value in (("temperature", temperature), ("max_tokens", max_tokens),
-                            ("timeout", timeout)):
+                            ("timeout", timeout), ("reasoning_effort", reasoning_effort)):
             if value is not _UNSET:
                 overrides[name] = value
         self._check_request_options(kwargs)
@@ -70,14 +70,21 @@ class LLM:
         settings = {name: options.pop(name) for name in self._REQUEST_FIELDS if name in options}
         config = Config.resolve(self.config, overrides=settings, environ={})
         options.update(model=config.model, timeout=config.timeout, stream=stream)
-        for name in ("temperature", "max_tokens"):
+        for name in ("temperature", "max_tokens", "reasoning_effort"):
             value = getattr(config, name)
             if value is not None:
                 options[name] = value
+        if config.reasoning_effort not in {None, "none"}:
+            for name in ("temperature", "top_p", "top_logprobs", "logprobs"):
+                options.pop(name, None)
+        if config.reasoning_effort is not None and "max_tokens" in options and config.default_provider != "deepseek":
+            options["max_completion_tokens"] = options.pop("max_tokens")
         return options
 
     def think(self, messages: List[Dict[str, Any]], **kwargs) -> Iterator[str]:
         """逐段返回流式文本；配置错误在开始迭代生成器时抛出。"""
+        if self.config.api_mode == "responses":
+            raise ConfigException("Responses streaming is not implemented; use invoke/run")
         options = self._build_request_params(kwargs, stream=True)
         if {"tools", "tool_choice", "parallel_tool_calls"}.intersection(options):
             raise ConfigException("think supports text streaming only; use invoke for tool calls")
@@ -116,6 +123,9 @@ class LLM:
         elif tool_choice is not None or "parallel_tool_calls" in kwargs:
             raise ConfigException("Tool selection parameters require nonempty tools")
         options = self._build_request_params(kwargs, stream=False)
+        if self.config.api_mode == "responses":
+            from .responses import invoke_responses
+            return invoke_responses(self._client, messages, options)
         print(f"🧠 Calling model {self.model}...")
         try:
             response = self._client.chat.completions.create(messages=messages, **options)

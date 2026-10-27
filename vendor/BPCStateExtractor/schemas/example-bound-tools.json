@@ -1,0 +1,52 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_patient_state",
+      "description": "Return cutoff-safe BPC facts for the bound patient GENIE-DFCI-051542. cutoff_day must not exceed 220.",
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cutoff_day": {
+            "type": "integer",
+            "maximum": 220,
+            "description": "Inclusive day relative to the first BPC cancer diagnosis."
+          }
+        },
+        "required": [
+          "cutoff_day"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_patient_evidence",
+      "description": "Return only whitelisted evidence metadata already visible for GENIE-DFCI-051542; never returns a raw source row.",
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cutoff_day": {
+            "type": "integer",
+            "maximum": 220
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^E-[0-9a-f]{24}$"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "cutoff_day",
+          "evidence_refs"
+        ]
+      }
+    }
+  }
+]

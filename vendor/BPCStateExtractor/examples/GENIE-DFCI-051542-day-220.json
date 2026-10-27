@@ -1,0 +1,1814 @@
+{
+  "meta": {
+    "schema_version": "1.2",
+    "patient_id": "GENIE-DFCI-051542",
+    "cohort": "Prostate",
+    "target_cancer_id": "index:0",
+    "cutoff_day": 220,
+    "day_origin": "first_bpc_cancer_diagnosis",
+    "availability_policy": "documented_or_proxy"
+  },
+  "demographics": {
+    "birth_year": 1952,
+    "sex_raw": "Male",
+    "race_raw": "White",
+    "ethnicity_raw": "Non-Spanish/non-Hispanic",
+    "institution": "DFCI",
+    "evidence_refs": [
+      "E-584e431103fddb55294785fe"
+    ]
+  },
+  "cancer_context": {
+    "target_cancer_id": "index:0",
+    "diagnosis": {
+      "value": "Prostate Cancer",
+      "event_day": 0,
+      "available_day": 0,
+      "available_day_basis": "diagnosis_date_proxy",
+      "evidence_refs": [
+        "E-b9577caa81069fca65f0262d"
+      ]
+    },
+    "site_raw": "C61.9",
+    "histology_raw": "Adenocarcinoma, NOS",
+    "known_cancers": [
+      {
+        "cancer_id": "index:0",
+        "ca_seq_raw": "0",
+        "index_status": "index",
+        "diagnosis": {
+          "value": "Prostate Cancer",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "diagnosis_date_proxy",
+          "evidence_refs": [
+            "E-b9577caa81069fca65f0262d"
+          ]
+        },
+        "site_raw": "C61.9",
+        "histology_raw": "Adenocarcinoma, NOS",
+        "evidence_refs": [
+          "E-b9577caa81069fca65f0262d"
+        ]
+      }
+    ]
+  },
+  "treatment_history": [
+    {
+      "treatment_id": "regimen:index:0:1:drug:1",
+      "regimen_id": "regimen:index:0:1",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "drug_name_raw": "Flutamide(Apimid,Cebatrol,Chimax,Cytomid,Drogenil,Euflex,Eulexin,Eulexine,FLUT,Flucinom,Flucinome,Flugerel,Fluken,Flulem,FlutaGry,Flutabene,Flutacan,Flutamex,Flutamin,Flutan,Flutaplex,Fugerel,Grisetin,Niftolide,Oncosal,Profamid,Prostacur,Prostadirex,Prostica,Prostogenat,SCH13521,Tafenil,Tecnoflut,Testotard)",
+      "drug_name_normalized": null,
+      "start_day": 19,
+      "end_day": 62,
+      "end_day_basis": "treatment_end_date_proxy",
+      "status_at_cutoff": "ended",
+      "duration_masked": false,
+      "last_known_treatment_event": {
+        "type": "end",
+        "event_day": 62,
+        "available_day": 62,
+        "available_day_basis": "treatment_end_date_proxy"
+      },
+      "evidence_refs": [
+        "E-f57ec05ab5b47833bf8c11c1",
+        "E-85063008a120cf493fb4334b"
+      ]
+    },
+    {
+      "treatment_id": "regimen:index:0:2:drug:1",
+      "regimen_id": "regimen:index:0:2",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "drug_name_raw": "Leuprolide(A43818, Carcinil,DepoEligard,Enanton,Enantone,EnantoneGyn,Ginecrin,LEUP,Leuplin,Lucrin Depot,Lupron,Trenantone,UnoEnantone,Viadur)",
+      "drug_name_normalized": null,
+      "start_day": 26,
+      "end_day": null,
+      "end_day_basis": null,
+      "status_at_cutoff": "unknown",
+      "duration_masked": false,
+      "last_known_treatment_event": {
+        "type": "start",
+        "event_day": 26,
+        "available_day": 26,
+        "available_day_basis": "treatment_start_date_proxy"
+      },
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    {
+      "treatment_id": "regimen:index:0:3:drug:1",
+      "regimen_id": "regimen:index:0:3",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "drug_name_raw": "Enzalutamide(ASP9785, MDV3100, Xtandi)",
+      "drug_name_normalized": null,
+      "start_day": 62,
+      "end_day": 62,
+      "end_day_basis": "treatment_end_date_proxy",
+      "status_at_cutoff": "ended",
+      "duration_masked": false,
+      "last_known_treatment_event": {
+        "type": "end",
+        "event_day": 62,
+        "available_day": 62,
+        "available_day_basis": "treatment_end_date_proxy"
+      },
+      "evidence_refs": [
+        "E-359a3368462ab929a2fb43c0",
+        "E-62401f8a2e9cc5480578ec1d"
+      ]
+    },
+    {
+      "treatment_id": "regimen:index:0:4:drug:2",
+      "regimen_id": "regimen:index:0:4",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "drug_name_raw": "Bicalutamide(Casodex,Cosudex,ICI176334)",
+      "drug_name_normalized": null,
+      "start_day": 63,
+      "end_day": 209,
+      "end_day_basis": "treatment_end_date_proxy",
+      "status_at_cutoff": "ended",
+      "duration_masked": false,
+      "last_known_treatment_event": {
+        "type": "end",
+        "event_day": 209,
+        "available_day": 209,
+        "available_day_basis": "treatment_end_date_proxy"
+      },
+      "evidence_refs": [
+        "E-fcd2d00592f497c7a688511c",
+        "E-43d4328c44a2f47d31acb685"
+      ]
+    },
+    {
+      "treatment_id": "regimen:index:0:4:drug:1",
+      "regimen_id": "regimen:index:0:4",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "drug_name_raw": "Docetaxel (Taxotere,RP56976)",
+      "drug_name_normalized": null,
+      "start_day": 90,
+      "end_day": 195,
+      "end_day_basis": "treatment_end_date_proxy",
+      "status_at_cutoff": "ended",
+      "duration_masked": false,
+      "last_known_treatment_event": {
+        "type": "end",
+        "event_day": 195,
+        "available_day": 195,
+        "available_day_basis": "treatment_end_date_proxy"
+      },
+      "evidence_refs": [
+        "E-de9fea5845e32beab1d9e093",
+        "E-a9ac2e800fc12b5c5d7df31a"
+      ]
+    }
+  ],
+  "radiotherapy_history": [
+    {
+      "radiotherapy_id": "rt:1",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "event_day": 215,
+      "available_day": 215,
+      "available_day_basis": "radiotherapy_start_date_proxy",
+      "type_raw": "External beam, NOS",
+      "site_values_raw": {
+        "rt_site___81": "Spine/vertebral bodies",
+        "rt_site___85": "Pelvic bones"
+      },
+      "evidence_refs": [
+        "E-19f6e7f024f17f53a7283145"
+      ]
+    }
+  ],
+  "pathology": [
+    {
+      "pathology_id": "path:1:1",
+      "event_day": 0,
+      "available_day": 0,
+      "available_day_basis": "procedure_date_proxy",
+      "procedure_type_raw": "Surgical pathology",
+      "procedure_raw": "Biopsy",
+      "invasive_cancer_raw": "Yes",
+      "gleason_raw": "Gleason score 9",
+      "biomarkers": [],
+      "biomarker_testing": [
+        {
+          "biomarker": "PD-L1",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-576a4f0cd9c3231a73529381"
+          ]
+        },
+        {
+          "biomarker": "MSI",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-c0fe2a3619dd5006e9d43677"
+          ]
+        },
+        {
+          "biomarker": "MMR",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-ecb8132627a5dfc9206bcb30"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "E-e0ad1d7e4e65ae2d9e39d461"
+      ]
+    },
+    {
+      "pathology_id": "path:2:1",
+      "event_day": 214,
+      "available_day": 214,
+      "available_day_basis": "procedure_date_proxy",
+      "procedure_type_raw": "Cytology",
+      "procedure_raw": null,
+      "invasive_cancer_raw": "Yes",
+      "gleason_raw": null,
+      "biomarkers": [],
+      "biomarker_testing": [
+        {
+          "biomarker": "PD-L1",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 214,
+          "available_day": 214,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-b3c8642e7e542a575f68cf3a"
+          ]
+        },
+        {
+          "biomarker": "MSI",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 214,
+          "available_day": 214,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-13c12a9028e513b7273a47f7"
+          ]
+        },
+        {
+          "biomarker": "MMR",
+          "test_number": 2,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 214,
+          "available_day": 214,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-a1fef2ac0d9192f08ae3da91"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "E-78012bb76e5f4f74d84fbd8c"
+      ]
+    }
+  ],
+  "molecular_reports": [],
+  "observations": {
+    "imaging": [
+      {
+        "imaging_id": "image:1",
+        "event_day": -7,
+        "available_day": -7,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "Bone Scan",
+        "sites_raw": "Full body",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "assessment": "indeterminate",
+        "evidence_refs": [
+          "E-43aa207ca9bc843db267f3b4"
+        ]
+      },
+      {
+        "imaging_id": "image:2",
+        "event_day": 55,
+        "available_day": 55,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "Bone Scan",
+        "sites_raw": "Full body",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Improving/Responding",
+        "assessment": "responding",
+        "evidence_refs": [
+          "E-0c850c8e7ec79c4a8b5e6516"
+        ]
+      },
+      {
+        "imaging_id": "image:3",
+        "event_day": 55,
+        "available_day": 55,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "CT",
+        "sites_raw": "Abdomen, Pelvis",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "assessment": "indeterminate",
+        "evidence_refs": [
+          "E-96be91efec23781897cd1642"
+        ]
+      },
+      {
+        "imaging_id": "image:4",
+        "event_day": 188,
+        "available_day": 188,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "CT",
+        "sites_raw": "Brain/Head",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "assessment": "indeterminate",
+        "evidence_refs": [
+          "E-2fc86588463e5be342e2766b"
+        ]
+      },
+      {
+        "imaging_id": "image:5",
+        "event_day": 209,
+        "available_day": 209,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "Bone Scan",
+        "sites_raw": "Full body",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Improving/Responding",
+        "assessment": "responding",
+        "evidence_refs": [
+          "E-496f2381f4ba43c554030c3a"
+        ]
+      },
+      {
+        "imaging_id": "image:6",
+        "event_day": 209,
+        "available_day": 209,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "CT",
+        "sites_raw": "Chest, Abdomen, Pelvis",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Progressing/Worsening/Enlarging",
+        "assessment": "progressing",
+        "evidence_refs": [
+          "E-c622e1e9680dfcd102eb2038"
+        ]
+      },
+      {
+        "imaging_id": "image:7",
+        "event_day": 209,
+        "available_day": 209,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "CT",
+        "sites_raw": "Brain/Head",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Stable/No change",
+        "assessment": "stable",
+        "evidence_refs": [
+          "E-56c7f70953d715644ff6410f"
+        ]
+      },
+      {
+        "imaging_id": "image:8",
+        "event_day": 210,
+        "available_day": 210,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "CT",
+        "sites_raw": "Spine",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "assessment": "indeterminate",
+        "evidence_refs": [
+          "E-57184a5f8114b79f9108f720"
+        ]
+      },
+      {
+        "imaging_id": "image:9",
+        "event_day": 210,
+        "available_day": 210,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "MRI",
+        "sites_raw": "Spine",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Progressing/Worsening/Enlarging",
+        "assessment": "progressing",
+        "evidence_refs": [
+          "E-652fbf2c970a682f4bec6a3e"
+        ]
+      }
+    ],
+    "med_onc": [
+      {
+        "med_onc_id": "medonc:1",
+        "event_day": 36,
+        "available_day": 36,
+        "available_day_basis": "visit_date_proxy",
+        "cancer_type_raw": "Prostate Cancer",
+        "prostate_status_raw": "Not stated",
+        "psa_trend_raw": "PSA Change not mentioned",
+        "cancer_evidence_raw": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "evidence_refs": [
+          "E-b980e148578e162515910f13"
+        ]
+      },
+      {
+        "med_onc_id": "medonc:2",
+        "event_day": 55,
+        "available_day": 55,
+        "available_day_basis": "visit_date_proxy",
+        "cancer_type_raw": "Prostate Cancer",
+        "prostate_status_raw": "Not stated",
+        "psa_trend_raw": "PSA Change not mentioned",
+        "cancer_evidence_raw": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "evidence_refs": [
+          "E-673e84b5c9540734bb8301a9"
+        ]
+      },
+      {
+        "med_onc_id": "medonc:3",
+        "event_day": 90,
+        "available_day": 90,
+        "available_day_basis": "visit_date_proxy",
+        "cancer_type_raw": "Prostate Cancer",
+        "prostate_status_raw": "Not stated",
+        "psa_trend_raw": "PSA Change not mentioned",
+        "cancer_evidence_raw": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "evidence_refs": [
+          "E-6da914ed05d47f9b0ad4d9bc"
+        ]
+      },
+      {
+        "med_onc_id": "medonc:4",
+        "event_day": 132,
+        "available_day": 132,
+        "available_day_basis": "visit_date_proxy",
+        "cancer_type_raw": "Prostate Cancer",
+        "prostate_status_raw": "Not stated",
+        "psa_trend_raw": "PSA Change not mentioned",
+        "cancer_evidence_raw": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "evidence_refs": [
+          "E-99251d4d5dc1f00b9cbba495"
+        ]
+      },
+      {
+        "med_onc_id": "medonc:5",
+        "event_day": 153,
+        "available_day": 153,
+        "available_day_basis": "visit_date_proxy",
+        "cancer_type_raw": "Prostate Cancer",
+        "prostate_status_raw": "Not stated",
+        "psa_trend_raw": "PSA Decreasing",
+        "cancer_evidence_raw": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "evidence_refs": [
+          "E-812c1ad449a4c2c7169f24ff"
+        ]
+      },
+      {
+        "med_onc_id": "medonc:6",
+        "event_day": 195,
+        "available_day": 195,
+        "available_day_basis": "visit_date_proxy",
+        "cancer_type_raw": "Prostate Cancer",
+        "prostate_status_raw": "Not stated",
+        "psa_trend_raw": "PSA Change not mentioned",
+        "cancer_evidence_raw": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "evidence_refs": [
+          "E-e86d0a78658ed671e5c9d4a3"
+        ]
+      }
+    ],
+    "tumor_markers": [
+      {
+        "tumor_marker_id": "tm:1",
+        "event_day": -8,
+        "available_day": -8,
+        "available_day_basis": "collection_date_proxy",
+        "analyte_raw": "PSA",
+        "value_raw": "300.9",
+        "value_numeric": 300.9,
+        "unit_raw": "ng/mL",
+        "normal_range_lower_raw": "0",
+        "normal_range_upper_raw": "4",
+        "evidence_refs": [
+          "E-0b7607e3a8784b968b610970"
+        ]
+      },
+      {
+        "tumor_marker_id": "tm:2",
+        "event_day": 55,
+        "available_day": 55,
+        "available_day_basis": "collection_date_proxy",
+        "analyte_raw": "PSA",
+        "value_raw": "1.01",
+        "value_numeric": 1.01,
+        "unit_raw": "ng/mL",
+        "normal_range_lower_raw": "0",
+        "normal_range_upper_raw": "4",
+        "evidence_refs": [
+          "E-25c78708417b6ca6ea3ad061"
+        ]
+      },
+      {
+        "tumor_marker_id": "tm:3",
+        "event_day": 153,
+        "available_day": 153,
+        "available_day_basis": "collection_date_proxy",
+        "analyte_raw": "PSA",
+        "value_raw": "0.26",
+        "value_numeric": 0.26,
+        "unit_raw": "ng/mL",
+        "normal_range_lower_raw": "0",
+        "normal_range_upper_raw": "4",
+        "evidence_refs": [
+          "E-becd6ad938d10b8d5b50598c"
+        ]
+      },
+      {
+        "tumor_marker_id": "tm:4",
+        "event_day": 209,
+        "available_day": 209,
+        "available_day_basis": "collection_date_proxy",
+        "analyte_raw": "PSA",
+        "value_raw": "0.11",
+        "value_numeric": 0.11,
+        "unit_raw": "ng/mL",
+        "normal_range_lower_raw": "0",
+        "normal_range_upper_raw": "4",
+        "evidence_refs": [
+          "E-8a90cc15e54e02d713d9f654"
+        ]
+      },
+      {
+        "tumor_marker_id": "tm:5",
+        "event_day": 209,
+        "available_day": 209,
+        "available_day_basis": "collection_date_proxy",
+        "analyte_raw": "Testosterone",
+        "value_raw": "7",
+        "value_numeric": 7.0,
+        "unit_raw": "ng/dL",
+        "normal_range_lower_raw": "240",
+        "normal_range_upper_raw": "950",
+        "evidence_refs": [
+          "E-13e4f5cc933745e8273392f9"
+        ]
+      }
+    ]
+  },
+  "current_summary": {
+    "latest_imaging": [
+      {
+        "event_day": 210,
+        "assessment_raw": "Not stated/Indeterminate",
+        "assessment": "indeterminate",
+        "evidence_refs": [
+          "E-57184a5f8114b79f9108f720"
+        ]
+      },
+      {
+        "event_day": 210,
+        "assessment_raw": "Progressing/Worsening/Enlarging",
+        "assessment": "progressing",
+        "evidence_refs": [
+          "E-652fbf2c970a682f4bec6a3e"
+        ]
+      }
+    ],
+    "latest_tumor_markers": [
+      {
+        "analyte_raw": "PSA",
+        "event_day": 209,
+        "value_raw": "0.11",
+        "value_numeric": 0.11,
+        "unit_raw": "ng/mL",
+        "evidence_refs": [
+          "E-8a90cc15e54e02d713d9f654"
+        ]
+      },
+      {
+        "analyte_raw": "Testosterone",
+        "event_day": 209,
+        "value_raw": "7",
+        "value_numeric": 7.0,
+        "unit_raw": "ng/dL",
+        "evidence_refs": [
+          "E-13e4f5cc933745e8273392f9"
+        ]
+      }
+    ]
+  },
+  "missing_information": [
+    {
+      "field": "treatment_history.regimen:index:0:2.drug_1.status_at_cutoff",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "record_ref": "R-230fadf9d271fb19"
+    }
+  ],
+  "evidence_refs": {
+    "E-584e431103fddb55294785fe": {
+      "sources": [
+        {
+          "source_file": "patient_level_dataset.csv",
+          "record_ref": "R-ccc6108364fb9032",
+          "fields": [
+            "birth_year",
+            "institution",
+            "naaccr_ethnicity_code",
+            "naaccr_race_code_primary",
+            "naaccr_sex_code"
+          ],
+          "values": {
+            "birth_year": "1952",
+            "institution": "DFCI",
+            "naaccr_ethnicity_code": "Non-Spanish/non-Hispanic",
+            "naaccr_race_code_primary": "White",
+            "naaccr_sex_code": "Male"
+          }
+        }
+      ]
+    },
+    "E-b9577caa81069fca65f0262d": {
+      "sources": [
+        {
+          "source_file": "cancer_level_dataset_index.csv",
+          "record_ref": "R-c6a151119224440b",
+          "fields": [
+            "ca_d_site",
+            "ca_histology",
+            "ca_seq",
+            "ca_type",
+            "cohort",
+            "dob_ca_dx_days",
+            "record_id"
+          ],
+          "values": {
+            "ca_d_site": "C61.9",
+            "ca_histology": "Adenocarcinoma, NOS",
+            "ca_seq": "0",
+            "ca_type": "Prostate Cancer",
+            "cohort": "Prostate",
+            "dob_ca_dx_days": "23333",
+            "record_id": "GENIE-DFCI-051542"
+          }
+        }
+      ]
+    },
+    "E-f57ec05ab5b47833bf8c11c1": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-2222a952e114762e",
+          "fields": [
+            "ca_seq",
+            "drugs_drug_1",
+            "drugs_startdt_int_1",
+            "dx_drug_start_int_1",
+            "regimen_number"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "drugs_drug_1": "Flutamide(Apimid,Cebatrol,Chimax,Cytomid,Drogenil,Euflex,Eulexin,Eulexine,FLUT,Flucinom,Flucinome,Flugerel,Fluken,Flulem,FlutaGry,Flutabene,Flutacan,Flutamex,Flutamin,Flutan,Flutaplex,Fugerel,Grisetin,Niftolide,Oncosal,Profamid,Prostacur,Prostadirex,Prostica,Prostogenat,SCH13521,Tafenil,Tecnoflut,Testotard)",
+            "drugs_startdt_int_1": "23352",
+            "dx_drug_start_int_1": "19",
+            "regimen_number": "1"
+          }
+        }
+      ]
+    },
+    "E-85063008a120cf493fb4334b": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-2222a952e114762e",
+          "fields": [
+            "drugs_drug_1",
+            "dx_drug_end_int_1"
+          ],
+          "values": {
+            "drugs_drug_1": "Flutamide(Apimid,Cebatrol,Chimax,Cytomid,Drogenil,Euflex,Eulexin,Eulexine,FLUT,Flucinom,Flucinome,Flugerel,Fluken,Flulem,FlutaGry,Flutabene,Flutacan,Flutamex,Flutamin,Flutan,Flutaplex,Fugerel,Grisetin,Niftolide,Oncosal,Profamid,Prostacur,Prostadirex,Prostica,Prostogenat,SCH13521,Tafenil,Tecnoflut,Testotard)",
+            "dx_drug_end_int_1": "62"
+          }
+        }
+      ]
+    },
+    "E-55272db6ace4de3ffd5bced1": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-230fadf9d271fb19",
+          "fields": [
+            "ca_seq",
+            "drugs_drug_1",
+            "drugs_startdt_int_1",
+            "dx_drug_start_int_1",
+            "regimen_number"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "drugs_drug_1": "Leuprolide(A43818, Carcinil,DepoEligard,Enanton,Enantone,EnantoneGyn,Ginecrin,LEUP,Leuplin,Lucrin Depot,Lupron,Trenantone,UnoEnantone,Viadur)",
+            "drugs_startdt_int_1": "23359",
+            "dx_drug_start_int_1": "26",
+            "regimen_number": "2"
+          }
+        }
+      ]
+    },
+    "E-359a3368462ab929a2fb43c0": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-50c5d801b1a19f52",
+          "fields": [
+            "ca_seq",
+            "drugs_drug_1",
+            "drugs_startdt_int_1",
+            "dx_drug_start_int_1",
+            "regimen_number"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "drugs_drug_1": "Enzalutamide(ASP9785, MDV3100, Xtandi)",
+            "drugs_startdt_int_1": "23395",
+            "dx_drug_start_int_1": "62",
+            "regimen_number": "3"
+          }
+        }
+      ]
+    },
+    "E-62401f8a2e9cc5480578ec1d": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-50c5d801b1a19f52",
+          "fields": [
+            "drugs_drug_1",
+            "dx_drug_end_int_1"
+          ],
+          "values": {
+            "drugs_drug_1": "Enzalutamide(ASP9785, MDV3100, Xtandi)",
+            "dx_drug_end_int_1": "62"
+          }
+        }
+      ]
+    },
+    "E-de9fea5845e32beab1d9e093": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-7563257a9cd58bc6",
+          "fields": [
+            "ca_seq",
+            "drugs_drug_1",
+            "drugs_startdt_int_1",
+            "dx_drug_start_int_1",
+            "regimen_number"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "drugs_drug_1": "Docetaxel (Taxotere,RP56976)",
+            "drugs_startdt_int_1": "23423",
+            "dx_drug_start_int_1": "90",
+            "regimen_number": "4"
+          }
+        }
+      ]
+    },
+    "E-a9ac2e800fc12b5c5d7df31a": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-7563257a9cd58bc6",
+          "fields": [
+            "drugs_drug_1",
+            "dx_drug_end_int_1"
+          ],
+          "values": {
+            "drugs_drug_1": "Docetaxel (Taxotere,RP56976)",
+            "dx_drug_end_int_1": "195"
+          }
+        }
+      ]
+    },
+    "E-fcd2d00592f497c7a688511c": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-7563257a9cd58bc6",
+          "fields": [
+            "ca_seq",
+            "drugs_drug_2",
+            "drugs_startdt_int_2",
+            "dx_drug_start_int_2",
+            "regimen_number"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "drugs_drug_2": "Bicalutamide(Casodex,Cosudex,ICI176334)",
+            "drugs_startdt_int_2": "23396",
+            "dx_drug_start_int_2": "63",
+            "regimen_number": "4"
+          }
+        }
+      ]
+    },
+    "E-43d4328c44a2f47d31acb685": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-7563257a9cd58bc6",
+          "fields": [
+            "drugs_drug_2",
+            "dx_drug_end_int_2"
+          ],
+          "values": {
+            "drugs_drug_2": "Bicalutamide(Casodex,Cosudex,ICI176334)",
+            "dx_drug_end_int_2": "209"
+          }
+        }
+      ]
+    },
+    "E-19f6e7f024f17f53a7283145": {
+      "sources": [
+        {
+          "source_file": "ca_radtx_dataset.csv",
+          "record_ref": "R-8ac53f3a50689004",
+          "fields": [
+            "ca_seq",
+            "dx_rt_start_days",
+            "rt_number",
+            "rt_site___81",
+            "rt_site___85",
+            "rt_type"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "dx_rt_start_days": "215",
+            "rt_number": "1",
+            "rt_site___81": "Spine/vertebral bodies",
+            "rt_site___85": "Pelvic bones",
+            "rt_type": "External beam, NOS"
+          }
+        }
+      ]
+    },
+    "E-e0ad1d7e4e65ae2d9e39d461": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "path_ca_inv_any",
+            "path_pc_gleason",
+            "path_proc",
+            "path_proc_int",
+            "path_proc_number",
+            "path_proc_type",
+            "path_rep_number"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "path_ca_inv_any": "Yes",
+            "path_pc_gleason": "Gleason score 9",
+            "path_proc": "Biopsy",
+            "path_proc_int": "23333",
+            "path_proc_number": "1",
+            "path_proc_type": "Surgical pathology",
+            "path_rep_number": "1"
+          }
+        }
+      ]
+    },
+    "E-576a4f0cd9c3231a73529381": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "path_proc_int",
+            "pdl1_yn"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "path_proc_int": "23333",
+            "pdl1_yn": "No"
+          }
+        }
+      ]
+    },
+    "E-c0fe2a3619dd5006e9d43677": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "msi_yn",
+            "path_proc_int"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "msi_yn": "No",
+            "path_proc_int": "23333"
+          }
+        }
+      ]
+    },
+    "E-ecb8132627a5dfc9206bcb30": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "mmr_yn",
+            "path_proc_int"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "mmr_yn": "No",
+            "path_proc_int": "23333"
+          }
+        }
+      ]
+    },
+    "E-78012bb76e5f4f74d84fbd8c": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-32032ed0bcdc0298",
+          "fields": [
+            "dx_path_proc_days",
+            "path_ca_inv_any",
+            "path_proc_int",
+            "path_proc_number",
+            "path_proc_type",
+            "path_rep_number"
+          ],
+          "values": {
+            "dx_path_proc_days": "214",
+            "path_ca_inv_any": "Yes",
+            "path_proc_int": "23547",
+            "path_proc_number": "2",
+            "path_proc_type": "Cytology",
+            "path_rep_number": "1"
+          }
+        }
+      ]
+    },
+    "E-b3c8642e7e542a575f68cf3a": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-32032ed0bcdc0298",
+          "fields": [
+            "dx_path_proc_days",
+            "path_proc_int",
+            "pdl1_yn"
+          ],
+          "values": {
+            "dx_path_proc_days": "214",
+            "path_proc_int": "23547",
+            "pdl1_yn": "No"
+          }
+        }
+      ]
+    },
+    "E-13c12a9028e513b7273a47f7": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-32032ed0bcdc0298",
+          "fields": [
+            "dx_path_proc_days",
+            "msi_yn",
+            "path_proc_int"
+          ],
+          "values": {
+            "dx_path_proc_days": "214",
+            "msi_yn": "No",
+            "path_proc_int": "23547"
+          }
+        }
+      ]
+    },
+    "E-a1fef2ac0d9192f08ae3da91": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-32032ed0bcdc0298",
+          "fields": [
+            "dx_path_proc_days",
+            "mmr_yn_2",
+            "path_proc_int"
+          ],
+          "values": {
+            "dx_path_proc_days": "214",
+            "mmr_yn_2": "No",
+            "path_proc_int": "23547"
+          }
+        }
+      ]
+    },
+    "E-43aa207ca9bc843db267f3b4": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-61c1bdfc56ffdcfb",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "-7",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Not stated/Indeterminate",
+            "image_scan_type": "Bone Scan",
+            "scan_number": "1",
+            "scan_sites": "Full body"
+          }
+        }
+      ]
+    },
+    "E-0c850c8e7ec79c4a8b5e6516": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-e40d5d2440aa99f2",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "55",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Improving/Responding",
+            "image_scan_type": "Bone Scan",
+            "scan_number": "2",
+            "scan_sites": "Full body"
+          }
+        }
+      ]
+    },
+    "E-96be91efec23781897cd1642": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-cddc9f8b98a10959",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "55",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Not stated/Indeterminate",
+            "image_scan_type": "CT",
+            "scan_number": "3",
+            "scan_sites": "Abdomen, Pelvis"
+          }
+        }
+      ]
+    },
+    "E-2fc86588463e5be342e2766b": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-be43a8018570172d",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "188",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Not stated/Indeterminate",
+            "image_scan_type": "CT",
+            "scan_number": "4",
+            "scan_sites": "Brain/Head"
+          }
+        }
+      ]
+    },
+    "E-496f2381f4ba43c554030c3a": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-8bf5a3b9a5936d9c",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "209",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Improving/Responding",
+            "image_scan_type": "Bone Scan",
+            "scan_number": "5",
+            "scan_sites": "Full body"
+          }
+        }
+      ]
+    },
+    "E-c622e1e9680dfcd102eb2038": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-6df9cea7add00f93",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "209",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Progressing/Worsening/Enlarging",
+            "image_scan_type": "CT",
+            "scan_number": "6",
+            "scan_sites": "Chest, Abdomen, Pelvis"
+          }
+        }
+      ]
+    },
+    "E-56c7f70953d715644ff6410f": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-b58a56dbf014f1d0",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "209",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Stable/No change",
+            "image_scan_type": "CT",
+            "scan_number": "7",
+            "scan_sites": "Brain/Head"
+          }
+        }
+      ]
+    },
+    "E-57184a5f8114b79f9108f720": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-a00aa3a883e90394",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "210",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Not stated/Indeterminate",
+            "image_scan_type": "CT",
+            "scan_number": "8",
+            "scan_sites": "Spine"
+          }
+        }
+      ]
+    },
+    "E-652fbf2c970a682f4bec6a3e": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-67aeb1cb2b85d8a8",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "210",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Progressing/Worsening/Enlarging",
+            "image_scan_type": "MRI",
+            "scan_number": "9",
+            "scan_sites": "Spine"
+          }
+        }
+      ]
+    },
+    "E-b980e148578e162515910f13": {
+      "sources": [
+        {
+          "source_file": "med_onc_note_level_dataset.csv",
+          "record_ref": "R-5491dba38c048612",
+          "fields": [
+            "dx_md_visit_days",
+            "md_ca",
+            "md_ca_status",
+            "md_pca_status",
+            "md_psa_status",
+            "md_type_ca_cur",
+            "md_visit_number"
+          ],
+          "values": {
+            "dx_md_visit_days": "36",
+            "md_ca": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+            "md_ca_status": "Not stated/Indeterminate",
+            "md_pca_status": "Not stated",
+            "md_psa_status": "PSA Change not mentioned",
+            "md_type_ca_cur": "Prostate Cancer",
+            "md_visit_number": "1"
+          }
+        }
+      ]
+    },
+    "E-673e84b5c9540734bb8301a9": {
+      "sources": [
+        {
+          "source_file": "med_onc_note_level_dataset.csv",
+          "record_ref": "R-76254c6e146080c9",
+          "fields": [
+            "dx_md_visit_days",
+            "md_ca",
+            "md_ca_status",
+            "md_pca_status",
+            "md_psa_status",
+            "md_type_ca_cur",
+            "md_visit_number"
+          ],
+          "values": {
+            "dx_md_visit_days": "55",
+            "md_ca": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+            "md_ca_status": "Not stated/Indeterminate",
+            "md_pca_status": "Not stated",
+            "md_psa_status": "PSA Change not mentioned",
+            "md_type_ca_cur": "Prostate Cancer",
+            "md_visit_number": "2"
+          }
+        }
+      ]
+    },
+    "E-6da914ed05d47f9b0ad4d9bc": {
+      "sources": [
+        {
+          "source_file": "med_onc_note_level_dataset.csv",
+          "record_ref": "R-1bd2e4deb63e558c",
+          "fields": [
+            "dx_md_visit_days",
+            "md_ca",
+            "md_ca_status",
+            "md_pca_status",
+            "md_psa_status",
+            "md_type_ca_cur",
+            "md_visit_number"
+          ],
+          "values": {
+            "dx_md_visit_days": "90",
+            "md_ca": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+            "md_ca_status": "Not stated/Indeterminate",
+            "md_pca_status": "Not stated",
+            "md_psa_status": "PSA Change not mentioned",
+            "md_type_ca_cur": "Prostate Cancer",
+            "md_visit_number": "3"
+          }
+        }
+      ]
+    },
+    "E-99251d4d5dc1f00b9cbba495": {
+      "sources": [
+        {
+          "source_file": "med_onc_note_level_dataset.csv",
+          "record_ref": "R-9555dc90ed30d6f1",
+          "fields": [
+            "dx_md_visit_days",
+            "md_ca",
+            "md_ca_status",
+            "md_pca_status",
+            "md_psa_status",
+            "md_type_ca_cur",
+            "md_visit_number"
+          ],
+          "values": {
+            "dx_md_visit_days": "132",
+            "md_ca": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+            "md_ca_status": "Not stated/Indeterminate",
+            "md_pca_status": "Not stated",
+            "md_psa_status": "PSA Change not mentioned",
+            "md_type_ca_cur": "Prostate Cancer",
+            "md_visit_number": "4"
+          }
+        }
+      ]
+    },
+    "E-812c1ad449a4c2c7169f24ff": {
+      "sources": [
+        {
+          "source_file": "med_onc_note_level_dataset.csv",
+          "record_ref": "R-f1542998122f0548",
+          "fields": [
+            "dx_md_visit_days",
+            "md_ca",
+            "md_ca_status",
+            "md_pca_status",
+            "md_psa_status",
+            "md_type_ca_cur",
+            "md_visit_number"
+          ],
+          "values": {
+            "dx_md_visit_days": "153",
+            "md_ca": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+            "md_ca_status": "Not stated/Indeterminate",
+            "md_pca_status": "Not stated",
+            "md_psa_status": "PSA Decreasing",
+            "md_type_ca_cur": "Prostate Cancer",
+            "md_visit_number": "5"
+          }
+        }
+      ]
+    },
+    "E-e86d0a78658ed671e5c9d4a3": {
+      "sources": [
+        {
+          "source_file": "med_onc_note_level_dataset.csv",
+          "record_ref": "R-803293adcbbbee64",
+          "fields": [
+            "dx_md_visit_days",
+            "md_ca",
+            "md_ca_status",
+            "md_pca_status",
+            "md_psa_status",
+            "md_type_ca_cur",
+            "md_visit_number"
+          ],
+          "values": {
+            "dx_md_visit_days": "195",
+            "md_ca": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+            "md_ca_status": "Not stated/Indeterminate",
+            "md_pca_status": "Not stated",
+            "md_psa_status": "PSA Change not mentioned",
+            "md_type_ca_cur": "Prostate Cancer",
+            "md_visit_number": "6"
+          }
+        }
+      ]
+    },
+    "E-0b7607e3a8784b968b610970": {
+      "sources": [
+        {
+          "source_file": "tm_level_dataset.csv",
+          "record_ref": "R-402d1163f5003812",
+          "fields": [
+            "dx_tm_days",
+            "tm_normal_range_lower",
+            "tm_normal_range_upper",
+            "tm_num_result",
+            "tm_number",
+            "tm_result_units",
+            "tm_type"
+          ],
+          "values": {
+            "dx_tm_days": "-8",
+            "tm_normal_range_lower": "0",
+            "tm_normal_range_upper": "4",
+            "tm_num_result": "300.9",
+            "tm_number": "1",
+            "tm_result_units": "ng/mL",
+            "tm_type": "PSA"
+          }
+        }
+      ]
+    },
+    "E-25c78708417b6ca6ea3ad061": {
+      "sources": [
+        {
+          "source_file": "tm_level_dataset.csv",
+          "record_ref": "R-58eedeff6eafbacc",
+          "fields": [
+            "dx_tm_days",
+            "tm_normal_range_lower",
+            "tm_normal_range_upper",
+            "tm_num_result",
+            "tm_number",
+            "tm_result_units",
+            "tm_type"
+          ],
+          "values": {
+            "dx_tm_days": "55",
+            "tm_normal_range_lower": "0",
+            "tm_normal_range_upper": "4",
+            "tm_num_result": "1.01",
+            "tm_number": "2",
+            "tm_result_units": "ng/mL",
+            "tm_type": "PSA"
+          }
+        }
+      ]
+    },
+    "E-becd6ad938d10b8d5b50598c": {
+      "sources": [
+        {
+          "source_file": "tm_level_dataset.csv",
+          "record_ref": "R-b6a3cbc0e2bf9fec",
+          "fields": [
+            "dx_tm_days",
+            "tm_normal_range_lower",
+            "tm_normal_range_upper",
+            "tm_num_result",
+            "tm_number",
+            "tm_result_units",
+            "tm_type"
+          ],
+          "values": {
+            "dx_tm_days": "153",
+            "tm_normal_range_lower": "0",
+            "tm_normal_range_upper": "4",
+            "tm_num_result": "0.26",
+            "tm_number": "3",
+            "tm_result_units": "ng/mL",
+            "tm_type": "PSA"
+          }
+        }
+      ]
+    },
+    "E-8a90cc15e54e02d713d9f654": {
+      "sources": [
+        {
+          "source_file": "tm_level_dataset.csv",
+          "record_ref": "R-8f263c25094d6579",
+          "fields": [
+            "dx_tm_days",
+            "tm_normal_range_lower",
+            "tm_normal_range_upper",
+            "tm_num_result",
+            "tm_number",
+            "tm_result_units",
+            "tm_type"
+          ],
+          "values": {
+            "dx_tm_days": "209",
+            "tm_normal_range_lower": "0",
+            "tm_normal_range_upper": "4",
+            "tm_num_result": "0.11",
+            "tm_number": "4",
+            "tm_result_units": "ng/mL",
+            "tm_type": "PSA"
+          }
+        }
+      ]
+    },
+    "E-13e4f5cc933745e8273392f9": {
+      "sources": [
+        {
+          "source_file": "tm_level_dataset.csv",
+          "record_ref": "R-414d597c208dbe07",
+          "fields": [
+            "dx_tm_days",
+            "tm_normal_range_lower",
+            "tm_normal_range_upper",
+            "tm_num_result",
+            "tm_number",
+            "tm_result_units",
+            "tm_type"
+          ],
+          "values": {
+            "dx_tm_days": "209",
+            "tm_normal_range_lower": "240",
+            "tm_normal_range_upper": "950",
+            "tm_num_result": "7",
+            "tm_number": "5",
+            "tm_result_units": "ng/dL",
+            "tm_type": "Testosterone"
+          }
+        }
+      ]
+    }
+  },
+  "field_status": {
+    "/treatment_history/0/drug_name_normalized": {
+      "status": "not_normalized",
+      "reason": "raw_drug_name_retained_by_policy",
+      "evidence_refs": [
+        "E-f57ec05ab5b47833bf8c11c1",
+        "E-85063008a120cf493fb4334b"
+      ]
+    },
+    "/treatment_history/1/drug_name_normalized": {
+      "status": "not_normalized",
+      "reason": "raw_drug_name_retained_by_policy",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/treatment_history/1/end_day": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/treatment_history/1/end_day_basis": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/treatment_history/1/status_at_cutoff": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/treatment_history/2/drug_name_normalized": {
+      "status": "not_normalized",
+      "reason": "raw_drug_name_retained_by_policy",
+      "evidence_refs": [
+        "E-359a3368462ab929a2fb43c0",
+        "E-62401f8a2e9cc5480578ec1d"
+      ]
+    },
+    "/treatment_history/3/drug_name_normalized": {
+      "status": "not_normalized",
+      "reason": "raw_drug_name_retained_by_policy",
+      "evidence_refs": [
+        "E-fcd2d00592f497c7a688511c",
+        "E-43d4328c44a2f47d31acb685"
+      ]
+    },
+    "/treatment_history/4/drug_name_normalized": {
+      "status": "not_normalized",
+      "reason": "raw_drug_name_retained_by_policy",
+      "evidence_refs": [
+        "E-de9fea5845e32beab1d9e093",
+        "E-a9ac2e800fc12b5c5d7df31a"
+      ]
+    },
+    "/pathology/1/procedure_raw": {
+      "status": "not_recorded",
+      "reason": "no_value_in_admitted_source",
+      "evidence_refs": [
+        "E-78012bb76e5f4f74d84fbd8c"
+      ]
+    },
+    "/pathology/1/gleason_raw": {
+      "status": "not_recorded",
+      "reason": "no_value_in_admitted_source",
+      "evidence_refs": [
+        "E-78012bb76e5f4f74d84fbd8c"
+      ]
+    },
+    "/observations/imaging/0/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-43aa207ca9bc843db267f3b4"
+      ]
+    },
+    "/observations/imaging/0/assessment": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-43aa207ca9bc843db267f3b4"
+      ]
+    },
+    "/observations/imaging/2/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-96be91efec23781897cd1642"
+      ]
+    },
+    "/observations/imaging/2/assessment": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-96be91efec23781897cd1642"
+      ]
+    },
+    "/observations/imaging/3/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-2fc86588463e5be342e2766b"
+      ]
+    },
+    "/observations/imaging/3/assessment": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-2fc86588463e5be342e2766b"
+      ]
+    },
+    "/observations/imaging/7/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-57184a5f8114b79f9108f720"
+      ]
+    },
+    "/observations/imaging/7/assessment": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-57184a5f8114b79f9108f720"
+      ]
+    },
+    "/observations/med_onc/0/prostate_status_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_stated",
+      "evidence_refs": [
+        "E-b980e148578e162515910f13"
+      ]
+    },
+    "/observations/med_onc/0/psa_trend_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_mentioned",
+      "evidence_refs": [
+        "E-b980e148578e162515910f13"
+      ]
+    },
+    "/observations/med_onc/0/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-b980e148578e162515910f13"
+      ]
+    },
+    "/observations/med_onc/1/prostate_status_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_stated",
+      "evidence_refs": [
+        "E-673e84b5c9540734bb8301a9"
+      ]
+    },
+    "/observations/med_onc/1/psa_trend_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_mentioned",
+      "evidence_refs": [
+        "E-673e84b5c9540734bb8301a9"
+      ]
+    },
+    "/observations/med_onc/1/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-673e84b5c9540734bb8301a9"
+      ]
+    },
+    "/observations/med_onc/2/prostate_status_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_stated",
+      "evidence_refs": [
+        "E-6da914ed05d47f9b0ad4d9bc"
+      ]
+    },
+    "/observations/med_onc/2/psa_trend_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_mentioned",
+      "evidence_refs": [
+        "E-6da914ed05d47f9b0ad4d9bc"
+      ]
+    },
+    "/observations/med_onc/2/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-6da914ed05d47f9b0ad4d9bc"
+      ]
+    },
+    "/observations/med_onc/3/prostate_status_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_stated",
+      "evidence_refs": [
+        "E-99251d4d5dc1f00b9cbba495"
+      ]
+    },
+    "/observations/med_onc/3/psa_trend_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_mentioned",
+      "evidence_refs": [
+        "E-99251d4d5dc1f00b9cbba495"
+      ]
+    },
+    "/observations/med_onc/3/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-99251d4d5dc1f00b9cbba495"
+      ]
+    },
+    "/observations/med_onc/4/prostate_status_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_stated",
+      "evidence_refs": [
+        "E-812c1ad449a4c2c7169f24ff"
+      ]
+    },
+    "/observations/med_onc/4/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-812c1ad449a4c2c7169f24ff"
+      ]
+    },
+    "/observations/med_onc/5/prostate_status_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_stated",
+      "evidence_refs": [
+        "E-e86d0a78658ed671e5c9d4a3"
+      ]
+    },
+    "/observations/med_onc/5/psa_trend_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_mentioned",
+      "evidence_refs": [
+        "E-e86d0a78658ed671e5c9d4a3"
+      ]
+    },
+    "/observations/med_onc/5/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-e86d0a78658ed671e5c9d4a3"
+      ]
+    },
+    "/current_summary/latest_imaging/0/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-57184a5f8114b79f9108f720"
+      ]
+    },
+    "/current_summary/latest_imaging/0/assessment": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-57184a5f8114b79f9108f720"
+      ]
+    }
+  }
+}

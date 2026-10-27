@@ -3,7 +3,6 @@
 from types import SimpleNamespace
 from copy import deepcopy
 import json
-from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 import os
@@ -11,6 +10,12 @@ from unittest.mock import patch
 
 from bpcagent import BasicAgent, CalculatorTool, Config, LLM, LLMResponse, ReActAgent, ToolRegistry
 from bpcagent.agents.exceptions import ConfigException, LLMException
+from bpcagent.log_paths import new_log_path
+
+if __package__:
+    from .logging_support import isolate_agent_logs
+else:
+    from logging_support import isolate_agent_logs
 
 
 def text_response():
@@ -20,6 +25,7 @@ def text_response():
 
 class LLMTests(unittest.TestCase):
     def setUp(self):
+        isolate_agent_logs(self)
         env = patch.dict(os.environ, {}, clear=True)
         env.start()
         self.addCleanup(env.stop)
@@ -78,7 +84,8 @@ class LLMTests(unittest.TestCase):
                 registry.register_tool(CalculatorTool())
                 agent = cls("reasoning", self.llm, tool_registry=registry)
                 # 仅将日志写入临时目录，不在仓库留下测试产物。
-                with patch("bpcagent.agents.agents.Path", return_value=Path(directory)):
+                with patch("bpcagent.agents.agents.new_log_path",
+                           side_effect=lambda name: new_log_path(name, root=directory)):
                     result = agent.run("计算 (1+1)*3")
                     self.assertTrue(result.finished)
                     self.assertEqual(result.output, {"text": "6"})
@@ -89,7 +96,7 @@ class LLMTests(unittest.TestCase):
                     self.assertEqual([m["reasoning_content"] for m in requests[2]["messages"]
                                       if m["role"] == "assistant"], expected[:2])
                     self.assertEqual(requests[2]["messages"][-1]["tool_call_id"], "call_2")
-                    log = json.loads(next(Path(directory).glob("*.json")).read_text())
+                    log = json.loads(agent.log_path.read_text())
                     self.assertEqual(log["transcript"], result.transcript)
                     self.assertEqual(log["history"][-1]["reasoning_content"], expected[-1])
                     agent.run("再确认一次")

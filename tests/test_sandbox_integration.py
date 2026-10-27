@@ -234,7 +234,7 @@ Path('/workspace/output/tumor_markers_standardized.json').write_text(json.dumps(
                                    tool("get_patient_evidence", {"cutoff_day": 1, "evidence_refs": ["E-test"]}, "evidence"),
                                    shell(999, "bad"), report, shell(28.842, "fixed"), report]
         agent = None
-        with patch("bpcagent.agents.patient_state.create_patient_tools", side_effect=factory):
+        with patch("bpcagent.agents.unit_patient_state.create_patient_tools", side_effect=factory):
             if use_task:
                 def create_agent(**kwargs):
                     nonlocal agent, task_dir

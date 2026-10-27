@@ -10,6 +10,11 @@ from unittest.mock import Mock, patch
 from bpcagent import BasicAgent, CalculatorTool, Config, LLM, ReActAgent, ToolRegistry, ToolArgs, Tool, ToolCall, LLMResponse
 from bpcagent.agents.exceptions import ConfigException
 
+if __package__:
+    from .logging_support import isolate_agent_logs
+else:
+    from logging_support import isolate_agent_logs
+
 
 def tool_response(name="calculate", arguments='{"input":"1+1"}', call_id="call_1"):
     return LLMResponse(tool_calls=[ToolCall(id=call_id, name=name, arguments=arguments)],
@@ -38,6 +43,7 @@ class NestedTool(Tool[NestedArgs]):
 
 class AgentTests(unittest.TestCase):
     def setUp(self):
+        isolate_agent_logs(self)
         env = patch.dict(os.environ, {}, clear=True)
         env.start()
         self.addCleanup(env.stop)

@@ -1,4 +1,4 @@
-"""BPC 患者工具与工厂函数；调用方提供患者配置和本次工作目录。"""
+"""内置 BPCStateExtractor 的 Agent 工具适配；调用方提供患者配置和工作目录。"""
 
 from __future__ import annotations
 
@@ -112,8 +112,9 @@ def create_patient_tools(
 ) -> tuple[PatientStateTool, PatientEvidenceTool]:
     """创建共享提取器、患者绑定和保存器的两个工具。
 
-    仅调用此工厂时需要安装 bpc_state。工作目录由调用方按任务隔离；
-    规则路径省略时使用 bpc_state 的默认资源，函数不读取环境文件。
+    bpc_state 随 BPCAgent 一并安装，不依赖外部项目的源码路径。
+    工作目录由调用方按任务隔离；规则路径省略时使用内置默认资源。
+    函数不读取环境文件，也不提供未来评估数据工具。
     """
     from bpc_state import BPCStateExtractor, BoundedPatientTool
 

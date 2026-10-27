@@ -10,6 +10,9 @@ dist/
 .pytest_cache/
 .DS_Store
 log/
+workspace/
+offline_evaluation/
+config/*.local.json
 .in
 .log
 IMPROVEMENT_PLAN.md

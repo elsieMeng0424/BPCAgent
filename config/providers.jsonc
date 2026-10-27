@@ -1,0 +1,24 @@
+{
+  "providers": {
+    "openai": {
+      "base_url": "https://api.openai.com/v1", // OpenAI 官方 API 地址
+      "api_key_env": "OPENAI_API_KEY", // 密钥名称，不是真实 key；在环境变量或 secrets.local.json 填写
+      "api_mode": "responses" // 可选："responses" | "chat_completions"；必须与模型支持的协议一致
+    },
+    "claude": {
+      "base_url": "https://api.anthropic.com/v1/", // Claude 官方 OpenAI 兼容接口，非原生 Messages
+      "api_key_env": "ANTHROPIC_API_KEY", // 使用 Claude 官方密钥；需已绑定 workspace
+      "api_mode": "chat_completions" // 当前 Claude 适配仅支持此值；reasoning_effort 必须为 null
+    },
+    "deepseek": {
+      "base_url": "https://api.deepseek.com", // DeepSeek 官方 API 地址
+      "api_key_env": "DEEPSEEK_API_KEY", // 使用 DeepSeek 官方密钥
+      "api_mode": "chat_completions" // 当前 DeepSeek 适配仅支持此值
+    },
+    "gateway": {
+      "base_url": null, // 必填平台 API URL 才可选用；/anthropic 通常是原生 Messages 协议，不可直接当作 OpenAI 接口
+      "api_key_env": "GATEWAY_API_KEY", // 使用路由平台签发的密钥，与模型品牌无关
+      "api_mode": "chat_completions" // 可选："chat_completions" | "responses"；取决于平台支持
+    }
+  }
+}

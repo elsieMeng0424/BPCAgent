@@ -1,6 +1,6 @@
 # Docker sandbox
 
-`SandboxShellTool` exposes the existing `run_shell(command)` action but runs each command in a new restricted local Linux container. Only task files persist between calls. `PatientStateAgent` and the local `ShellTool` are unchanged. `UnitPatientStateAgent` opts into sandbox execution through `sandbox_config`; omitting it retains the earlier local demo behavior. A configured sandbox never falls back to host execution.
+`SandboxShellTool` exposes the existing `run_shell(command)` action but runs each command in a new restricted local Linux container. Only task files persist between calls. The unified workflow `PatientStateAgent` does not automatically enable this sandbox; the advanced `UnitPatientStateAgent` opts into it through `sandbox_config`. Omitting that configuration retains local Shell execution. A configured sandbox never falls back to host execution.
 
 ## Prepare the image
 
@@ -52,7 +52,7 @@ Commands run through argument arrays with `shell=False` on the host; only the co
 
 Normal completion and timeout force-remove the entire command container, including descendants. A timeout returns `timed_out=true`, exit code 124, and permits a fresh command only after cleanup. Resource/OOM status is recorded. Infrastructure or cleanup failure marks the sandbox unusable and stops the demo. Ordinary shell errors remain visible through nonzero `exit_code`, allowing model correction.
 
-The host logs final state, validation attempts, image ID, context, limits, per-command container names and cleanup status to the existing `log/UnitPatientStateAgent_*.json`. No `run_result.json` is created. A stopped Docker daemon or force-killed host process can prevent cleanup; consult `active_containers`/execution records in the log. All containers have `bpcagent.sandbox.session=<id>` labels. Inspect only the affected session before removing its containers; never globally prune Docker resources for cleanup.
+The host logs final state, validation attempts, image ID, context, limits, per-command container names and cleanup status to the existing `task_dir/logs/UnitPatientStateAgent_*.json`. No `run_result.json` is created. A stopped Docker daemon or force-killed host process can prevent cleanup; consult `active_containers`/execution records in the log. All containers have `bpcagent.sandbox.session=<id>` labels. Inspect only the affected session before removing its containers; never globally prune Docker resources for cleanup.
 
 Container isolation does not replace semantic validation and does not change which data the host sends to the configured model service.
 

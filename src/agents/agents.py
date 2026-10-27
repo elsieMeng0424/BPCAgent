@@ -2,9 +2,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from datetime import datetime
 import json
-from pathlib import Path
 from typing import Iterator, Optional
 import warnings
 
@@ -12,6 +10,7 @@ from .config import Config
 from .messages import LLMResponse, Message, ToolCall
 from .models import LLM
 from .result import AgentResult
+from ..log_paths import new_log_path
 from ..tools import ToolRegistry, ToolResult
 from .exceptions import AgentException, ConfigException, LLMException
 
@@ -86,16 +85,15 @@ class Agent(ABC):
     def _save_history(self, messages: list[dict]) -> None:
         """保存全部会话历史和本次交互消息，包含工具调用请求与结果。"""
         try:
-            log_dir = Path("log")
-            log_dir.mkdir(parents=True, exist_ok=True)
-            name = "".join(c if c.isalnum() or c in "_-" else "_" for c in self.name) or "agent"
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            directory = getattr(self, "task_dir", None) or getattr(self, "work_dir", None)
+            log_path = new_log_path(self.name, run_dir=directory) if directory is not None else new_log_path(self.name)
             data = {
                 "history": [message.model_dump(mode="json") for message in self._history],
                 "transcript": messages,
             }
-            with (log_dir / f"{name}_{timestamp}.json").open("x", encoding="utf-8") as file:
+            with log_path.open("x", encoding="utf-8") as file:
                 json.dump(data, file, ensure_ascii=False, indent=2)
+            self.log_path = log_path
         except (OSError, ValueError, TypeError) as exc:
             warnings.warn(f"Failed to save Agent history: {exc}", RuntimeWarning, stacklevel=2)
     
@@ -109,6 +107,8 @@ class Agent(ABC):
         # 思考模式的后续工具请求需要回传供应商返回的推理内容。
         if response.reasoning_content is not None:
             message["reasoning_content"] = response.reasoning_content
+        if response.response_items is not None:
+            message["response_items"] = deepcopy(response.response_items)
         if response.tool_calls:
             message["tool_calls"] = [call.to_dict() for call in response.tool_calls]
         messages.append(message)
@@ -162,7 +162,8 @@ class Agent(ABC):
             if not response.tool_calls:
                 self.add_message(Message(input, "user"))
                 self.add_message(Message(response.content, "assistant",
-                                         reasoning_content=response.reasoning_content))
+                                         reasoning_content=response.reasoning_content,
+                                         response_items=deepcopy(response.response_items)))
                 return response.content
             if not tools:
                 raise AgentException("Received tool calls while tools were disabled", code="invalid_response")

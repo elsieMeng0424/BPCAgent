@@ -1,0 +1,604 @@
+{
+  "meta": {
+    "schema_version": "1.2",
+    "patient_id": "GENIE-DFCI-051542",
+    "cohort": "Prostate",
+    "target_cancer_id": "index:0",
+    "cutoff_day": 50,
+    "day_origin": "first_bpc_cancer_diagnosis",
+    "availability_policy": "documented_or_proxy"
+  },
+  "demographics": {
+    "birth_year": 1952,
+    "sex_raw": "Male",
+    "race_raw": "White",
+    "ethnicity_raw": "Non-Spanish/non-Hispanic",
+    "institution": "DFCI",
+    "evidence_refs": [
+      "E-584e431103fddb55294785fe"
+    ]
+  },
+  "cancer_context": {
+    "target_cancer_id": "index:0",
+    "diagnosis": {
+      "value": "Prostate Cancer",
+      "event_day": 0,
+      "available_day": 0,
+      "available_day_basis": "diagnosis_date_proxy",
+      "evidence_refs": [
+        "E-b9577caa81069fca65f0262d"
+      ]
+    },
+    "site_raw": "C61.9",
+    "histology_raw": "Adenocarcinoma, NOS",
+    "known_cancers": [
+      {
+        "cancer_id": "index:0",
+        "ca_seq_raw": "0",
+        "index_status": "index",
+        "diagnosis": {
+          "value": "Prostate Cancer",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "diagnosis_date_proxy",
+          "evidence_refs": [
+            "E-b9577caa81069fca65f0262d"
+          ]
+        },
+        "site_raw": "C61.9",
+        "histology_raw": "Adenocarcinoma, NOS",
+        "evidence_refs": [
+          "E-b9577caa81069fca65f0262d"
+        ]
+      }
+    ]
+  },
+  "treatment_history": [
+    {
+      "treatment_id": "regimen:index:0:1:drug:1",
+      "regimen_id": "regimen:index:0:1",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "drug_name_raw": "Flutamide(Apimid,Cebatrol,Chimax,Cytomid,Drogenil,Euflex,Eulexin,Eulexine,FLUT,Flucinom,Flucinome,Flugerel,Fluken,Flulem,FlutaGry,Flutabene,Flutacan,Flutamex,Flutamin,Flutan,Flutaplex,Fugerel,Grisetin,Niftolide,Oncosal,Profamid,Prostacur,Prostadirex,Prostica,Prostogenat,SCH13521,Tafenil,Tecnoflut,Testotard)",
+      "drug_name_normalized": null,
+      "start_day": 19,
+      "end_day": null,
+      "end_day_basis": null,
+      "status_at_cutoff": "unknown",
+      "duration_masked": false,
+      "last_known_treatment_event": {
+        "type": "start",
+        "event_day": 19,
+        "available_day": 19,
+        "available_day_basis": "treatment_start_date_proxy"
+      },
+      "evidence_refs": [
+        "E-f57ec05ab5b47833bf8c11c1"
+      ]
+    },
+    {
+      "treatment_id": "regimen:index:0:2:drug:1",
+      "regimen_id": "regimen:index:0:2",
+      "cancer_id": "index:0",
+      "cancer_association": "target",
+      "drug_name_raw": "Leuprolide(A43818, Carcinil,DepoEligard,Enanton,Enantone,EnantoneGyn,Ginecrin,LEUP,Leuplin,Lucrin Depot,Lupron,Trenantone,UnoEnantone,Viadur)",
+      "drug_name_normalized": null,
+      "start_day": 26,
+      "end_day": null,
+      "end_day_basis": null,
+      "status_at_cutoff": "unknown",
+      "duration_masked": false,
+      "last_known_treatment_event": {
+        "type": "start",
+        "event_day": 26,
+        "available_day": 26,
+        "available_day_basis": "treatment_start_date_proxy"
+      },
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    }
+  ],
+  "radiotherapy_history": [],
+  "pathology": [
+    {
+      "pathology_id": "path:1:1",
+      "event_day": 0,
+      "available_day": 0,
+      "available_day_basis": "procedure_date_proxy",
+      "procedure_type_raw": "Surgical pathology",
+      "procedure_raw": "Biopsy",
+      "invasive_cancer_raw": "Yes",
+      "gleason_raw": "Gleason score 9",
+      "biomarkers": [],
+      "biomarker_testing": [
+        {
+          "biomarker": "PD-L1",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-576a4f0cd9c3231a73529381"
+          ]
+        },
+        {
+          "biomarker": "MSI",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-c0fe2a3619dd5006e9d43677"
+          ]
+        },
+        {
+          "biomarker": "MMR",
+          "test_number": 1,
+          "reported_raw": "No",
+          "meaning": "not_reported_on_pathology_report",
+          "event_day": 0,
+          "available_day": 0,
+          "available_day_basis": "procedure_date_proxy",
+          "evidence_refs": [
+            "E-ecb8132627a5dfc9206bcb30"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "E-e0ad1d7e4e65ae2d9e39d461"
+      ]
+    }
+  ],
+  "molecular_reports": [],
+  "observations": {
+    "imaging": [
+      {
+        "imaging_id": "image:1",
+        "event_day": -7,
+        "available_day": -7,
+        "available_day_basis": "scan_date_proxy",
+        "modality_raw": "Bone Scan",
+        "sites_raw": "Full body",
+        "cancer_evidence_raw": "Yes, the Impression states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "assessment": "indeterminate",
+        "evidence_refs": [
+          "E-43aa207ca9bc843db267f3b4"
+        ]
+      }
+    ],
+    "med_onc": [
+      {
+        "med_onc_id": "medonc:1",
+        "event_day": 36,
+        "available_day": 36,
+        "available_day_basis": "visit_date_proxy",
+        "cancer_type_raw": "Prostate Cancer",
+        "prostate_status_raw": "Not stated",
+        "psa_trend_raw": "PSA Change not mentioned",
+        "cancer_evidence_raw": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+        "assessment_raw": "Not stated/Indeterminate",
+        "evidence_refs": [
+          "E-b980e148578e162515910f13"
+        ]
+      }
+    ],
+    "tumor_markers": [
+      {
+        "tumor_marker_id": "tm:1",
+        "event_day": -8,
+        "available_day": -8,
+        "available_day_basis": "collection_date_proxy",
+        "analyte_raw": "PSA",
+        "value_raw": "300.9",
+        "value_numeric": 300.9,
+        "unit_raw": "ng/mL",
+        "normal_range_lower_raw": "0",
+        "normal_range_upper_raw": "4",
+        "evidence_refs": [
+          "E-0b7607e3a8784b968b610970"
+        ]
+      }
+    ]
+  },
+  "current_summary": {
+    "latest_imaging": [
+      {
+        "event_day": -7,
+        "assessment_raw": "Not stated/Indeterminate",
+        "assessment": "indeterminate",
+        "evidence_refs": [
+          "E-43aa207ca9bc843db267f3b4"
+        ]
+      }
+    ],
+    "latest_tumor_markers": [
+      {
+        "analyte_raw": "PSA",
+        "event_day": -8,
+        "value_raw": "300.9",
+        "value_numeric": 300.9,
+        "unit_raw": "ng/mL",
+        "evidence_refs": [
+          "E-0b7607e3a8784b968b610970"
+        ]
+      }
+    ]
+  },
+  "missing_information": [
+    {
+      "field": "treatment_history.regimen:index:0:1.drug_1.status_at_cutoff",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "record_ref": "R-2222a952e114762e"
+    },
+    {
+      "field": "treatment_history.regimen:index:0:2.drug_1.status_at_cutoff",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "record_ref": "R-230fadf9d271fb19"
+    }
+  ],
+  "evidence_refs": {
+    "E-584e431103fddb55294785fe": {
+      "sources": [
+        {
+          "source_file": "patient_level_dataset.csv",
+          "record_ref": "R-ccc6108364fb9032",
+          "fields": [
+            "birth_year",
+            "institution",
+            "naaccr_ethnicity_code",
+            "naaccr_race_code_primary",
+            "naaccr_sex_code"
+          ],
+          "values": {
+            "birth_year": "1952",
+            "institution": "DFCI",
+            "naaccr_ethnicity_code": "Non-Spanish/non-Hispanic",
+            "naaccr_race_code_primary": "White",
+            "naaccr_sex_code": "Male"
+          }
+        }
+      ]
+    },
+    "E-b9577caa81069fca65f0262d": {
+      "sources": [
+        {
+          "source_file": "cancer_level_dataset_index.csv",
+          "record_ref": "R-c6a151119224440b",
+          "fields": [
+            "ca_d_site",
+            "ca_histology",
+            "ca_seq",
+            "ca_type",
+            "cohort",
+            "dob_ca_dx_days",
+            "record_id"
+          ],
+          "values": {
+            "ca_d_site": "C61.9",
+            "ca_histology": "Adenocarcinoma, NOS",
+            "ca_seq": "0",
+            "ca_type": "Prostate Cancer",
+            "cohort": "Prostate",
+            "dob_ca_dx_days": "23333",
+            "record_id": "GENIE-DFCI-051542"
+          }
+        }
+      ]
+    },
+    "E-f57ec05ab5b47833bf8c11c1": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-2222a952e114762e",
+          "fields": [
+            "ca_seq",
+            "drugs_drug_1",
+            "drugs_startdt_int_1",
+            "dx_drug_start_int_1",
+            "regimen_number"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "drugs_drug_1": "Flutamide(Apimid,Cebatrol,Chimax,Cytomid,Drogenil,Euflex,Eulexin,Eulexine,FLUT,Flucinom,Flucinome,Flugerel,Fluken,Flulem,FlutaGry,Flutabene,Flutacan,Flutamex,Flutamin,Flutan,Flutaplex,Fugerel,Grisetin,Niftolide,Oncosal,Profamid,Prostacur,Prostadirex,Prostica,Prostogenat,SCH13521,Tafenil,Tecnoflut,Testotard)",
+            "drugs_startdt_int_1": "23352",
+            "dx_drug_start_int_1": "19",
+            "regimen_number": "1"
+          }
+        }
+      ]
+    },
+    "E-55272db6ace4de3ffd5bced1": {
+      "sources": [
+        {
+          "source_file": "regimen_cancer_level_dataset.csv",
+          "record_ref": "R-230fadf9d271fb19",
+          "fields": [
+            "ca_seq",
+            "drugs_drug_1",
+            "drugs_startdt_int_1",
+            "dx_drug_start_int_1",
+            "regimen_number"
+          ],
+          "values": {
+            "ca_seq": "0",
+            "drugs_drug_1": "Leuprolide(A43818, Carcinil,DepoEligard,Enanton,Enantone,EnantoneGyn,Ginecrin,LEUP,Leuplin,Lucrin Depot,Lupron,Trenantone,UnoEnantone,Viadur)",
+            "drugs_startdt_int_1": "23359",
+            "dx_drug_start_int_1": "26",
+            "regimen_number": "2"
+          }
+        }
+      ]
+    },
+    "E-e0ad1d7e4e65ae2d9e39d461": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "path_ca_inv_any",
+            "path_pc_gleason",
+            "path_proc",
+            "path_proc_int",
+            "path_proc_number",
+            "path_proc_type",
+            "path_rep_number"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "path_ca_inv_any": "Yes",
+            "path_pc_gleason": "Gleason score 9",
+            "path_proc": "Biopsy",
+            "path_proc_int": "23333",
+            "path_proc_number": "1",
+            "path_proc_type": "Surgical pathology",
+            "path_rep_number": "1"
+          }
+        }
+      ]
+    },
+    "E-576a4f0cd9c3231a73529381": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "path_proc_int",
+            "pdl1_yn"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "path_proc_int": "23333",
+            "pdl1_yn": "No"
+          }
+        }
+      ]
+    },
+    "E-c0fe2a3619dd5006e9d43677": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "msi_yn",
+            "path_proc_int"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "msi_yn": "No",
+            "path_proc_int": "23333"
+          }
+        }
+      ]
+    },
+    "E-ecb8132627a5dfc9206bcb30": {
+      "sources": [
+        {
+          "source_file": "pathology_report_level_dataset.csv",
+          "record_ref": "R-b02945faf470609d",
+          "fields": [
+            "dx_path_proc_days",
+            "mmr_yn",
+            "path_proc_int"
+          ],
+          "values": {
+            "dx_path_proc_days": "0",
+            "mmr_yn": "No",
+            "path_proc_int": "23333"
+          }
+        }
+      ]
+    },
+    "E-43aa207ca9bc843db267f3b4": {
+      "sources": [
+        {
+          "source_file": "imaging_level_dataset.csv",
+          "record_ref": "R-61c1bdfc56ffdcfb",
+          "fields": [
+            "dx_scan_days",
+            "image_ca",
+            "image_overall",
+            "image_scan_type",
+            "scan_number",
+            "scan_sites"
+          ],
+          "values": {
+            "dx_scan_days": "-7",
+            "image_ca": "Yes, the Impression states or implies there is evidence of cancer",
+            "image_overall": "Not stated/Indeterminate",
+            "image_scan_type": "Bone Scan",
+            "scan_number": "1",
+            "scan_sites": "Full body"
+          }
+        }
+      ]
+    },
+    "E-b980e148578e162515910f13": {
+      "sources": [
+        {
+          "source_file": "med_onc_note_level_dataset.csv",
+          "record_ref": "R-5491dba38c048612",
+          "fields": [
+            "dx_md_visit_days",
+            "md_ca",
+            "md_ca_status",
+            "md_pca_status",
+            "md_psa_status",
+            "md_type_ca_cur",
+            "md_visit_number"
+          ],
+          "values": {
+            "dx_md_visit_days": "36",
+            "md_ca": "Yes, the Impression/Plan states or implies there is evidence of cancer",
+            "md_ca_status": "Not stated/Indeterminate",
+            "md_pca_status": "Not stated",
+            "md_psa_status": "PSA Change not mentioned",
+            "md_type_ca_cur": "Prostate Cancer",
+            "md_visit_number": "1"
+          }
+        }
+      ]
+    },
+    "E-0b7607e3a8784b968b610970": {
+      "sources": [
+        {
+          "source_file": "tm_level_dataset.csv",
+          "record_ref": "R-402d1163f5003812",
+          "fields": [
+            "dx_tm_days",
+            "tm_normal_range_lower",
+            "tm_normal_range_upper",
+            "tm_num_result",
+            "tm_number",
+            "tm_result_units",
+            "tm_type"
+          ],
+          "values": {
+            "dx_tm_days": "-8",
+            "tm_normal_range_lower": "0",
+            "tm_normal_range_upper": "4",
+            "tm_num_result": "300.9",
+            "tm_number": "1",
+            "tm_result_units": "ng/mL",
+            "tm_type": "PSA"
+          }
+        }
+      ]
+    }
+  },
+  "field_status": {
+    "/treatment_history/0/drug_name_normalized": {
+      "status": "not_normalized",
+      "reason": "raw_drug_name_retained_by_policy",
+      "evidence_refs": [
+        "E-f57ec05ab5b47833bf8c11c1"
+      ]
+    },
+    "/treatment_history/0/end_day": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-f57ec05ab5b47833bf8c11c1"
+      ]
+    },
+    "/treatment_history/0/end_day_basis": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-f57ec05ab5b47833bf8c11c1"
+      ]
+    },
+    "/treatment_history/0/status_at_cutoff": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-f57ec05ab5b47833bf8c11c1"
+      ]
+    },
+    "/treatment_history/1/drug_name_normalized": {
+      "status": "not_normalized",
+      "reason": "raw_drug_name_retained_by_policy",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/treatment_history/1/end_day": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/treatment_history/1/end_day_basis": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/treatment_history/1/status_at_cutoff": {
+      "status": "unknown",
+      "reason": "insufficient_evidence_as_of_cutoff",
+      "evidence_refs": [
+        "E-55272db6ace4de3ffd5bced1"
+      ]
+    },
+    "/observations/imaging/0/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-43aa207ca9bc843db267f3b4"
+      ]
+    },
+    "/observations/imaging/0/assessment": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-43aa207ca9bc843db267f3b4"
+      ]
+    },
+    "/observations/med_onc/0/prostate_status_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_stated",
+      "evidence_refs": [
+        "E-b980e148578e162515910f13"
+      ]
+    },
+    "/observations/med_onc/0/psa_trend_raw": {
+      "status": "not_reported",
+      "reason": "source_explicitly_not_mentioned",
+      "evidence_refs": [
+        "E-b980e148578e162515910f13"
+      ]
+    },
+    "/observations/med_onc/0/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-b980e148578e162515910f13"
+      ]
+    },
+    "/current_summary/latest_imaging/0/assessment_raw": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-43aa207ca9bc843db267f3b4"
+      ]
+    },
+    "/current_summary/latest_imaging/0/assessment": {
+      "status": "unknown",
+      "reason": "source_indeterminate_or_not_stated",
+      "evidence_refs": [
+        "E-43aa207ca9bc843db267f3b4"
+      ]
+    }
+  }
+}

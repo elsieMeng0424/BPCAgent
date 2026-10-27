@@ -1,0 +1,40 @@
+{
+  "profiles": {
+    "deepseek_flash_low": {
+      "provider": "deepseek", // DeepSeek 官方，共享 DEEPSEEK_API_KEY
+      "model": "deepseek-flash", // 患者、靶点、药物三个任务 Agent
+      "reasoning_effort": "low", // DeepSeek 思考强度：low | high | max；null 使用服务默认
+      "temperature": null,
+      "max_tokens": 8192, // 每次模型请求的输出上限，包含思考 token
+      "timeout": 180,
+      "max_tool_iterations": 12
+    },
+    "deepseek_pro_low": {
+      "provider": "deepseek", // Review 也用 DeepSeek，但使用不同模型 ID
+      "model": "deepseek-v4-pro",
+      "reasoning_effort": "low",
+      "temperature": null,
+      "max_tokens": 8192,
+      "timeout": 180,
+      "max_tool_iterations": 12
+    },
+    "astra_medium": {
+      "provider": "openai", // 可选："openai" | "claude" | "deepseek" | "gateway"
+      "model": "gpt-6-astra", // 服务商实际支持的模型 ID；路由平台可能使用带前缀的 ID
+      "reasoning_effort": "medium", // 配置允许：null | "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"；具体模型未必全部支持，Claude 必须 null
+      "temperature": null, // null 不发送；或非负数（范围依模型）；开启非 none 推理时不发送采样参数
+      "max_tokens": null, // null 使用服务默认；或正整数（输出 token 上限，需符合模型限制）
+      "timeout": 180, // 大于 0，单位秒：单次模型请求超时
+      "max_tool_iterations": 10 // 正整数：单次 Agent 调用的最大模型/工具循环轮数
+    },
+    "sol_medium": {
+      "provider": "openai", // 可选："openai" | "claude" | "deepseek" | "gateway"
+      "model": "gpt-6-sol", // Review 的模型 ID 必须与三个任务 Agent 的模型 ID 不同
+      "reasoning_effort": "medium", // 可选值同上；null 不发送；"none" 显式请求该档位（需模型支持）
+      "temperature": null, // null 或模型支持的非负数；推理模式的限制同上
+      "max_tokens": null, // null 或正整数
+      "timeout": 180, // 大于 0，单位秒
+      "max_tool_iterations": 10 // 正整数
+    }
+  }
+}

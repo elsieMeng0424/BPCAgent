@@ -9,6 +9,11 @@ from unittest.mock import Mock, patch
 from bpcagent import BasicAgent, ReActAgent, CalculatorTool, Config, LLM, ToolRegistry
 from bpcagent.agents.exceptions import AgentException, ConfigException, LLMException
 
+if __package__:
+    from .logging_support import isolate_agent_logs
+else:
+    from logging_support import isolate_agent_logs
+
 
 def sdk_response(content=None, calls=None, reason="tool_calls", refusal=None):
     return NS(choices=[NS(message=NS(content=content, tool_calls=calls, refusal=refusal),
@@ -21,6 +26,7 @@ def sdk_call(identity="call_calc", name="calculate", arguments='{"input":"2+3*4"
 
 class NativeToolTests(unittest.TestCase):
     def setUp(self):
+        isolate_agent_logs(self)
         patcher = patch("bpcagent.agents.models.OpenAI")
         self.client = patcher.start().return_value
         self.addCleanup(patcher.stop)

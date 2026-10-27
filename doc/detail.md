@@ -27,7 +27,7 @@ BPCAgent/
     ├── agents/
     │   ├── __init__.py     # 智能体相关接口导出
     │   ├── agents.py       # Agent、BasicAgent、ReActAgent
-    │   ├── patient_state.py # PatientStateAgent，仅执行患者数据提取
+    │   ├── unit_patient_state.py # 高级单位纠错任务；患者角色统一在 workflow/agents.py
     │   ├── result.py       # AgentResult 运行产物与记录
     │   ├── models.py       # LLM 模型接口
     │   ├── messages.py     # Message、ToolCall、LLMResponse
@@ -40,7 +40,8 @@ BPCAgent/
         └── bpc_patient.py  # 可选的 BPC 患者工具与共享 JSON 保存器
 ```
 
-按职责分为 `agents` 和 `tools` 两个 Python 包。安装后可从任意工作目录导入 `bpcagent`，无需手动修改 `sys.path`。
+上图为底层框架的简化结构；完整的 workflow、tasks、sandbox 和内置工具文件树见根目录 README。
+安装后可从任意工作目录导入 `bpcagent`，无需手动修改 `sys.path`。
 
 `pyproject.toml` 将物理目录 `src/` 映射为 `bpcagent` 包，因此导入方式仍为 `from bpcagent import ...`。从旧目录结构升级后，需在使用该项目的环境中重新执行 `python -m pip install --no-build-isolation -e .`，更新可编辑安装的路径映射；仅将 `src/` 加入 `sys.path` 不会建立此映射。新增子包时需要同步更新打包配置中的 `packages` 列表。
 
@@ -77,28 +78,33 @@ for tool in tools:
 
 两个工具共用保存器，按调用顺序生成 `patient_state_day_220_001.json`、`patient_evidence_day_220_002.json` 等文件，不覆盖已有文件。状态原样保存，证据文件附带患者、癌症参数、截止日和引用列表；返回给模型的数据保持原接口结构。查询或写入失败会通过 `ToolRegistry` 返回工具错误。工具不会生成 `answer.json`，也不会读取环境文件或创建模型。
 
-工具参数模型按各自绑定的最大截止日生成；患者身份和时间边界仍由 `BoundedPatientTool` 执行。工厂函数支持可选的 `cancer_id`，省略 `rules_path` 时使用 `bpc_state` 的默认规则资源。仅调用工厂函数时才导入 `bpc_state`，普通模块导入、BPCAgent 通用功能和离线测试不要求安装患者数据包。需要复用已有绑定时，仍可直接实例化 `PatientStateTool`、`PatientEvidenceTool` 和 `PatientArtifactStore`。
+工具参数模型按各自绑定的最大截止日生成；患者身份和时间边界仍由 `BoundedPatientTool` 执行。工厂函数支持可选的 `cancer_id`，省略 `rules_path` 时使用内置 `bpc_state` 的默认规则资源。BPCStateExtractor 源码在 `vendor/BPCStateExtractor/`，随 BPCAgent 安装，无需外部源码路径。仅调用工厂函数时才导入 `bpc_state`，普通模块导入不读取数据集。需要复用已有绑定时，仍可直接实例化 `PatientStateTool`、`PatientEvidenceTool` 和 `PatientArtifactStore`。
 
 ## 患者数据提取智能体
 
-`PatientStateAgent` 封装患者工具的初始化与注册，仅负责提取状态和证据并保存 JSON。可从 `bpcagent`、`bpcagent.agents` 或 `bpcagent.agents.patient_state` 导入。创建时需要可用的 `bpc_state`，普通包导入不会加载该依赖。
+PatientStateAgent 已统一为 workflow 中的角色，原独立版模块已删除。
+从 bpcagent 或 bpcagent.workflow 导入的是同一个类；不要再使用
+bpcagent.agents.patient_state，或向 PatientStateAgent 传旧的 patient_id/work_dir 构造参数。
+应用应通过 AgentWorkflow 创建角色并管理阶段目录：
 
 ```python
-from bpcagent import Config, PatientStateAgent
+from bpcagent.workflow import AgentWorkflow
 
-agent = PatientStateAgent(
-    patient_id="GENIE-DFCI-051542",
-    cutoff_day=220,
-    data_dir=data_dir,
-    rules_path=rules_path,
-    work_dir=run_dir,
-    config=Config(max_tool_iterations=6),
+workflow = AgentWorkflow(
+    data_dir=data_dir, rules_path=rules_path, workspace_root=workspace_root,
+    mode="demo",
+    plan={"stages": [{"agent": "PatientStateAgent"}]},
 )
-result = agent.run()
-print(result.output.get("text", "") if result.finished else result.info)
+result = workflow.run(patient_id="GENIE-DFCI-051542", cutoff_day=220)
+print(result["status"], result["task_dir"], result["turns"][0]["artifacts"])
 ```
 
-模型成功调用指定日期的状态工具，再成功查询同日的至少一条证据后，程序立即结束任务，返回固定格式的执行状态，不再请求模型生成病情总结或分析。`finished=True` 以本次工具执行成功为依据；只有文字回答会返回 `incomplete_extraction`，轮次用尽返回 `step_limit_exceeded`。模型和工具的实际交互仍保留在 `transcript` 及 `log/PatientStateAgent_*.json` 中，不生成 `answer.json`。每次 `run()` 重新判断完成状态，不沿用前次会话。
+该计划运行患者阶段和 Review（需要时重试）。PatientState 阶段必须提取并保存状态，
+成功查询并保存当前快照至少一条证据（无引用时保存明确的空证据记录），
+调用 state_check，再提交结构化输出。只生成文字不算成功。
+文件保存在本次阶段目录，artifacts 路径相对 task_dir；每个重试都有独立目录。
+底层仍为内置 BPCStateExtractor，不会把 cutoff 之后的评估标签暴露给 Agent。
+UnitPatientStateAgent 的高级单位纠错能力保持独立，其内部提取步骤不再依赖第二个 PatientStateAgent 类。
 
 ## 使用 Conda 安装
 
@@ -169,7 +175,7 @@ else:
 
 同一个 Agent 实例保存多次 `run()` 的输入和最终回答，可以使用 `get_history()` 查看、`clear_history()` 清空。普通流式问答使用 `run_using_stream()`，需要关闭工具调用；启用非空工具注册表时该入口会明确报错。空流或纯空白流不会写入成功历史。
 
-进入共享执行循环后，每次运行结束（包括失败）会保存到当前工作目录的 `log/<Agent名称>_<日期时间>.json`，每次生成独立文件，不覆盖旧记录。JSON 包含 `history`（全部 `_history`，保留时间戳等字段）和 `transcript`（本次完整消息，包含系统提示、输入、模型回复、工具请求与结果）。工具请求位于 assistant 消息的 `tool_calls` 中，工具结果位于 `role="tool"` 消息的 `content` 中，以 JSON 字符串保留原始消息格式，通过 `tool_call_id` 配对。失败时也保留此前已发生的工具交互；这些记录不会额外加入 `_history`。流式运行在迭代结束或生成器关闭时保存已收到的文本；尚未开始执行或在进入上述执行阶段前参数检查失败时不生成文件。保存失败会提示警告，日志目录已加入 Git 忽略规则。
+进入共享执行循环后，每次运行结束（包括失败）会保存到本次实验目录的 `logs/<Agent名称>_<日期时间>_<uuid>.json`，每次生成独立文件，不覆盖旧记录。普通 Basic/ReAct Agent 默认自动创建 `workspace/YYYY-MM-DD/run_<uuid>/`；UnitPatientStateAgent 使用显式指定的 `task_dir` 收纳日志和产物。Workflow 角色覆盖了保存方法，将消息写到本次阶段的 `transcript.json`，不重复生成该 JSON 日志。JSON 包含 `history`（全部 `_history`，保留时间戳等字段）和 `transcript`（本次完整消息，包含系统提示、输入、模型回复、工具请求与结果）。工具请求位于 assistant 消息的 `tool_calls` 中，工具结果位于 `role="tool"` 消息的 `content` 中，以 JSON 字符串保留原始消息格式，通过 `tool_call_id` 配对。失败时也保留此前已发生的工具交互；这些记录不会额外加入 `_history`。流式运行在迭代结束或生成器关闭时保存已收到的文本；尚未开始执行或在进入上述执行阶段前参数检查失败时不生成文件。保存失败会提示警告，日志目录已加入 Git 忽略规则。
 
 ### Agent 运行结果
 

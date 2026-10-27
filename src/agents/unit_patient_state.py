@@ -2,7 +2,6 @@
 
 from contextlib import nullcontext
 from copy import deepcopy
-from datetime import datetime
 import hashlib
 import json
 import math
@@ -11,13 +10,15 @@ import shlex
 import sys
 
 from .config import Config
-from .exceptions import AgentException
+from .exceptions import AgentException, ConfigException
 from .messages import Message
 from .models import LLM
-from .patient_state import PatientStateAgent
+from .agents import BasicAgent
 from .result import AgentResult
+from ..log_paths import new_log_path
 from ..sandbox import DockerSandbox, SandboxConfig, SandboxError
 from ..tools import SandboxShellTool, ShellTool, ShellToolConfig, ToolRegistry
+from ..tools.bpc_patient import create_patient_tools
 
 
 from .unit_rules import (
@@ -27,7 +28,7 @@ from .unit_rules import (
 )
 
 
-class UnitPatientStateAgent(PatientStateAgent):
+class UnitPatientStateAgent(BasicAgent):
     """Extract state and evidence, then normalize units with shell tools on macOS/Linux."""
 
     def __init__(
@@ -57,14 +58,27 @@ class UnitPatientStateAgent(PatientStateAgent):
                 if directory.is_symlink():
                     raise ValueError(f"Sandbox task directory must not be a symlink: {directory}")
                 directory.mkdir(exist_ok=True)
-        super().__init__(
-            patient_id=patient_id, cutoff_day=cutoff_day,
-            data_dir=data_dir, work_dir=self.task_dir / "input" if sandbox_config else self.task_dir, rules_path=rules_path,
-            cancer_id=cancer_id, config=config, llm=llm,
-        )
-        self.name = "UnitPatientStateAgent"
+        self.patient_id = patient_id
+        self.cutoff_day = cutoff_day
+        self.work_dir = self.task_dir / "input" if sandbox_config else self.task_dir
+        registry = ToolRegistry()
+        for tool in create_patient_tools(patient_id=patient_id, max_cutoff_day=cutoff_day,
+                                         data_dir=data_dir, work_dir=self.work_dir,
+                                         rules_path=rules_path, cancer_id=cancer_id):
+            registry.register_tool(tool)
+        super().__init__(name="UnitPatientStateAgent", llm=llm, config=config, tool_registry=registry,
+                         sys_prompt=(
+                             "Extract and save patient data with tools before unit processing. "
+                             "First call get_patient_state for the specified cutoff, then get_patient_evidence "
+                             "for at least one reference at the same cutoff. Do not infer missing clinical facts. "
+                             "A text answer does not complete extraction. Correct tool errors and retry."
+                         ))
 
     def run(self, input=None, **kwargs):
+        self.clear_history()
+        task = f"Extract and save the state and evidence for patient {self.patient_id} through day {self.cutoff_day}."
+        if input:
+            task += f"\nAdditional execution requirements: {input}"
         self.validation_attempts = []
         self.unit_summary = None
         self.unit_changes = []
@@ -77,7 +91,7 @@ class UnitPatientStateAgent(PatientStateAgent):
                 self.sandbox = DockerSandbox(self.sandbox_config, self.task_dir)
             # Preflight runs before any LLM call; all exits clean only this task's containers.
             with self.sandbox if self.sandbox is not None else nullcontext():
-                result = super().run(input, **kwargs)
+                result = super().run(task, **kwargs)
         except SandboxError as exc:
             result = AgentResult(
                 finished=False, transcript=self._pending_transcript,
@@ -115,16 +129,41 @@ class UnitPatientStateAgent(PatientStateAgent):
             "sandbox": self.sandbox.metadata() if self.sandbox is not None else None,
         }
         text = json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False)
-        log_dir = Path("log")
-        log_dir.mkdir(exist_ok=True)
-        name = "".join(c if c.isalnum() or c in "_-" else "_" for c in self.name) or "agent"
-        self.log_path = log_dir / f"{name}_{datetime.now():%Y%m%d_%H%M%S_%f}.json"
+        self.log_path = new_log_path(self.name, run_dir=self.task_dir)
         with self.log_path.open("x", encoding="utf-8") as handle:
             handle.write(text)
 
+    def _extract_patient(self, messages, max_tool_iterations, **kwargs):
+        """Private extraction phase for the unit-processing task, not another Agent."""
+        if "tools" in kwargs:
+            raise ConfigException("Agent tools must come from the tool registry")
+        options = {**kwargs, "tools": self.tool_registry.to_openai_tools()}
+        state_saved = evidence_saved = False
+        for _ in range(max_tool_iterations):
+            response = self._invoke_response(messages, **options)
+            if not response.tool_calls:
+                raise AgentException("State and evidence extraction requires successful tool calls",
+                                     code="incomplete_extraction")
+            for call in response.tool_calls:
+                result = self._execute_tool_call(call)
+                messages.append(Message(result.model_dump_json(), "tool", tool_call_id=call.id).to_dict())
+                if result.status != "success":
+                    continue
+                arguments = json.loads(call.arguments)
+                if arguments.get("cutoff_day") != self.cutoff_day:
+                    continue
+                if call.name == "get_patient_state":
+                    state_saved = True
+                elif call.name == "get_patient_evidence" and state_saved:
+                    evidence_saved = True
+            if state_saved and evidence_saved:
+                return
+        raise AgentException("Model iteration limit reached before extraction completed",
+                             code="step_limit_exceeded")
+
     def _run_tool_loop(self, messages, input, max_tool_iterations, **kwargs):
         # Stage one preserves the original state and evidence extraction workflow.
-        super()._run_tool_loop(messages, input, max_tool_iterations, **kwargs)
+        self._extract_patient(messages, max_tool_iterations, **kwargs)
         state_files = list(self.work_dir.glob(f"patient_state_day_{self.cutoff_day}_*.json"))
         state_path = max(state_files, key=lambda path: int(path.stem.rsplit("_", 1)[1]))
         original_files = {path: path.read_bytes() for path in self.work_dir.glob("patient_*.json")}
@@ -666,4 +705,3 @@ write scripts to /workspace/scripts, results to /workspace/output and temporary 
                     f"evidence {', '.join(observation['evidence_refs'])}."
                 )
         return "\n".join(lines)
-

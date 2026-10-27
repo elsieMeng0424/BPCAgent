@@ -1,0 +1,551 @@
+{
+  "$defs": {
+    "EvaluationMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "purpose": {
+          "const": "offline_evaluation",
+          "default": "offline_evaluation",
+          "enum": [
+            "offline_evaluation"
+          ],
+          "title": "Purpose",
+          "type": "string"
+        },
+        "patient_id": {
+          "title": "Patient Id",
+          "type": "string"
+        },
+        "cohort": {
+          "title": "Cohort",
+          "type": "string"
+        },
+        "target_cancer_id": {
+          "title": "Target Cancer Id",
+          "type": "string"
+        },
+        "input_cutoff_day": {
+          "title": "Input Cutoff Day",
+          "type": "integer"
+        },
+        "evaluation_end_day": {
+          "title": "Evaluation End Day",
+          "type": "integer"
+        },
+        "input_state_sha256": {
+          "title": "Input State Sha256",
+          "type": "string"
+        },
+        "day_origin": {
+          "const": "first_bpc_cancer_diagnosis",
+          "default": "first_bpc_cancer_diagnosis",
+          "enum": [
+            "first_bpc_cancer_diagnosis"
+          ],
+          "title": "Day Origin",
+          "type": "string"
+        },
+        "interval": {
+          "const": "(input_cutoff_day, evaluation_end_day]",
+          "default": "(input_cutoff_day, evaluation_end_day]",
+          "enum": [
+            "(input_cutoff_day, evaluation_end_day]"
+          ],
+          "title": "Interval",
+          "type": "string"
+        }
+      },
+      "required": [
+        "patient_id",
+        "cohort",
+        "target_cancer_id",
+        "input_cutoff_day",
+        "evaluation_end_day",
+        "input_state_sha256"
+      ],
+      "title": "EvaluationMeta",
+      "type": "object"
+    },
+    "EvidenceRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/EvidenceSource"
+          },
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sources"
+      ],
+      "title": "EvidenceRecord",
+      "type": "object"
+    },
+    "EvidenceSource": {
+      "additionalProperties": false,
+      "properties": {
+        "source_file": {
+          "title": "Source File",
+          "type": "string"
+        },
+        "record_ref": {
+          "title": "Record Ref",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "values": {
+          "title": "Values",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_file",
+        "record_ref",
+        "fields"
+      ],
+      "title": "EvidenceSource",
+      "type": "object"
+    },
+    "FieldStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "unknown",
+            "not_recorded",
+            "not_reported",
+            "not_tested",
+            "not_detected",
+            "not_applicable",
+            "not_collected",
+            "invalid",
+            "non_exact",
+            "excluded_by_policy",
+            "not_normalized",
+            "masked"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "reason"
+      ],
+      "title": "FieldStatus",
+      "type": "object"
+    },
+    "ImagingObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "imaging_id": {
+          "title": "Imaging Id",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "scan_date_proxy",
+          "default": "scan_date_proxy",
+          "enum": [
+            "scan_date_proxy"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "modality_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Modality Raw"
+        },
+        "sites_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sites Raw"
+        },
+        "cancer_evidence_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Evidence Raw"
+        },
+        "assessment_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment Raw"
+        },
+        "assessment": {
+          "anyOf": [
+            {
+              "enum": [
+                "responding",
+                "stable",
+                "progressing",
+                "indeterminate",
+                "other"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "imaging_id",
+        "event_day",
+        "available_day",
+        "evidence_refs"
+      ],
+      "title": "ImagingObservation",
+      "type": "object"
+    },
+    "MedOncObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "med_onc_id": {
+          "title": "Med Onc Id",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "visit_date_proxy",
+          "default": "visit_date_proxy",
+          "enum": [
+            "visit_date_proxy"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "cancer_type_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Type Raw"
+        },
+        "prostate_status_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prostate Status Raw"
+        },
+        "psa_trend_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Psa Trend Raw"
+        },
+        "cancer_evidence_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancer Evidence Raw"
+        },
+        "assessment_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "med_onc_id",
+        "event_day",
+        "available_day",
+        "evidence_refs"
+      ],
+      "title": "MedOncObservation",
+      "type": "object"
+    },
+    "Observations": {
+      "additionalProperties": false,
+      "properties": {
+        "imaging": {
+          "items": {
+            "$ref": "#/$defs/ImagingObservation"
+          },
+          "title": "Imaging",
+          "type": "array"
+        },
+        "med_onc": {
+          "items": {
+            "$ref": "#/$defs/MedOncObservation"
+          },
+          "title": "Med Onc",
+          "type": "array"
+        },
+        "tumor_markers": {
+          "items": {
+            "$ref": "#/$defs/TumorMarkerObservation"
+          },
+          "title": "Tumor Markers",
+          "type": "array"
+        }
+      },
+      "title": "Observations",
+      "type": "object"
+    },
+    "TumorMarkerObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "tumor_marker_id": {
+          "title": "Tumor Marker Id",
+          "type": "string"
+        },
+        "event_day": {
+          "title": "Event Day",
+          "type": "integer"
+        },
+        "available_day": {
+          "title": "Available Day",
+          "type": "integer"
+        },
+        "available_day_basis": {
+          "const": "collection_date_proxy",
+          "default": "collection_date_proxy",
+          "enum": [
+            "collection_date_proxy"
+          ],
+          "title": "Available Day Basis",
+          "type": "string"
+        },
+        "analyte_raw": {
+          "title": "Analyte Raw",
+          "type": "string"
+        },
+        "value_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Raw"
+        },
+        "value_numeric": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Numeric"
+        },
+        "unit_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Raw"
+        },
+        "normal_range_lower_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normal Range Lower Raw"
+        },
+        "normal_range_upper_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normal Range Upper Raw"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tumor_marker_id",
+        "event_day",
+        "available_day",
+        "analyte_raw",
+        "evidence_refs"
+      ],
+      "title": "TumorMarkerObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "$ref": "#/$defs/EvaluationMeta"
+    },
+    "observations": {
+      "$ref": "#/$defs/Observations"
+    },
+    "late_available_observations": {
+      "$ref": "#/$defs/Observations"
+    },
+    "window_status": {
+      "additionalProperties": {
+        "enum": [
+          "recorded",
+          "none_recorded_in_window"
+        ],
+        "type": "string"
+      },
+      "title": "Window Status",
+      "type": "object"
+    },
+    "evidence_refs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/EvidenceRecord"
+      },
+      "title": "Evidence Refs",
+      "type": "object"
+    },
+    "field_status": {
+      "additionalProperties": {
+        "$ref": "#/$defs/FieldStatus"
+      },
+      "title": "Field Status",
+      "type": "object"
+    }
+  },
+  "required": [
+    "meta",
+    "observations",
+    "late_available_observations",
+    "window_status"
+  ],
+  "title": "EvaluationData",
+  "type": "object"
+}

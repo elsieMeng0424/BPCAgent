@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# The public BPC release is input data, not source code.
+dataset/
+
+# Optional runtime artifacts.
+.bpc-cache/
+audit-*.json
+offline_evaluation/

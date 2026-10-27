@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.1",
+  "day_origin": "first_bpc_cancer_diagnosis",
+  "source_policy": {
+    "primary": "analytic_csv",
+    "timeline_files": "validation_only_not_imported"
+  },
+  "time_rules": {
+    "cancer_diagnosis": {
+      "sources": [{"field": "first_index_ca_days", "origin": "direct"}, {"field": "dob_ca_dx_days", "origin": "birth"}],
+      "basis": "diagnosis_date_proxy"
+    },
+    "drug_start": {
+      "sources": [{"field": "drugs_startdt_int_{slot}", "origin": "birth"}, {"field": "dx_drug_start_int_{slot}", "origin": "cancer"}],
+      "basis": "treatment_start_date_proxy"
+    },
+    "drug_end": {
+      "sources": [{"field": "dx_drug_end_int_{slot}", "origin": "cancer"}],
+      "basis": "treatment_end_date_proxy",
+      "constraints": ["hide_future_end", "ignore_last_administration", "investigational_end_is_masked"]
+    },
+    "radiotherapy": {
+      "sources": [{"field": "dx_rt_start_days", "origin": "cancer"}],
+      "basis": "radiotherapy_start_date_proxy",
+      "note": "rt_rt_int_is_duration_not_date"
+    },
+    "pathology": {
+      "sources": [{"field": "dx_path_proc_days", "origin": "direct"}, {"field": "path_proc_int", "origin": "birth"}],
+      "basis": "procedure_date_proxy"
+    },
+    "pathology_biomarker": {
+      "sources": [{"field": "{prefix}_prepaint{suffix}", "origin": "birth"}],
+      "basis": "biomarker_report_date",
+      "constraints": ["exclude_when_report_day_unknown"]
+    },
+    "imaging": {
+      "sources": [{"field": "dx_scan_days", "origin": "direct"}],
+      "basis": "scan_date_proxy"
+    },
+    "med_onc": {
+      "sources": [{"field": "dx_md_visit_days", "origin": "direct"}],
+      "basis": "visit_date_proxy"
+    },
+    "tumor_marker": {
+      "sources": [{"field": "dx_tm_days", "origin": "direct"}],
+      "basis": "collection_date_proxy"
+    },
+    "ngs": {
+      "sources": [{"field": "dob_cpt_report_days", "origin": "birth"}, {"field": "dx_cpt_rep_days", "origin": "cancer"}],
+      "basis": "ngs_report_date",
+      "constraints": ["all_linked_genomics_enter_on_report_day", "exclude_when_report_day_unknown"]
+    }
+  },
+  "normalization_rules": {
+    "imaging_assessment": {
+      "progress|worsen|enlarg": "progressing",
+      "improv|respond": "responding",
+      "stable|no change": "stable",
+      "indeterminate|not stated": "indeterminate",
+      "otherwise": "other"
+    },
+    "drug_name": "raw_only_normalized_null",
+    "tumor_marker_units": "raw_only_no_implicit_conversion",
+    "tmb": "raw_value_and_bin_unit_unconfirmed",
+    "cna": "preserve_raw_skip_missing_emit_nonzero_only_use_coverage_for_neutral_profile"
+  },
+  "demographics": [
+    "birth_year", "naaccr_sex_code", "naaccr_race_code_primary",
+    "naaccr_ethnicity_code", "institution"
+  ],
+  "cancer": [
+    "cohort", "record_id", "ca_seq", "first_index_ca_days", "dob_ca_dx_days",
+    "ca_type", "ca_d_site", "ca_histology"
+  ],
+  "treatment": [
+    "cohort", "record_id", "ca_seq", "regimen_number",
+    "drugs_drug_1", "drugs_drug_2", "drugs_drug_3", "drugs_drug_4", "drugs_drug_5",
+    "drugs_startdt_int_1", "drugs_startdt_int_2", "drugs_startdt_int_3",
+    "drugs_startdt_int_4", "drugs_startdt_int_5",
+    "dx_drug_start_int_1", "dx_drug_start_int_2", "dx_drug_start_int_3",
+    "dx_drug_start_int_4", "dx_drug_start_int_5",
+    "dx_drug_end_int_1", "dx_drug_end_int_2", "dx_drug_end_int_3",
+    "dx_drug_end_int_4", "dx_drug_end_int_5"
+  ],
+  "radiotherapy": [
+    "cohort", "record_id", "ca_seq", "rt_number", "dx_rt_start_days",
+    "rt_type", "rt_site___*"
+  ],
+  "pathology": [
+    "cohort", "record_id", "path_proc_number", "path_rep_number", "dx_path_proc_days",
+    "path_proc_int", "path_proc_type", "path_proc", "path_ca_inv_any", "path_pc_gleason",
+    "pdl1_yn", "pdl1_yn_2", "pdl1_yn_3", "pdl1_prepaint", "pdl1_prepaint_2", "pdl1_prepaint_3",
+    "pdl1_test", "pdl1_test_2", "pdl1_test_3", "pdl1_sum", "pdl1_sum_2", "pdl1_sum_3",
+    "msi_yn", "msi_yn_2", "msi_yn_3", "msi_prepaint", "msi_prepaint_2", "msi_prepaint_3",
+    "msi_result", "msi_result_2", "msi_result_3",
+    "mmr_yn", "mmr_yn_2", "mmr_yn_3", "mmr_prepaint", "mmr_prepaint_2", "mmr_prepaint_3",
+    "mmr_result", "mmr_result_2", "mmr_result_3",
+    "pdl1_type*", "pdl1_perc*", "pdl1_tclrange*", "pdl1_tcurange*",
+    "pdl1_icperc*", "pdl1_iclrange*", "pdl1_icurange*", "pdl1_num*",
+    "pdl1_lcpsrange*", "pdl1_ucpsrange*",
+    "msi_high", "msi_high_2", "msi_high_3", "msi_low", "msi_low_2", "msi_low_3",
+    "mmr_mlh1*", "mmr_msh2*", "mmr_msh6*", "mmr_pms2*", "mmrp_det*", "mmrd_det*"
+  ],
+  "imaging": [
+    "cohort", "record_id", "scan_number", "dx_scan_days", "image_scan_type", "scan_sites",
+    "image_ca", "image_overall"
+  ],
+  "med_onc": [
+    "cohort", "record_id", "md_visit_number", "dx_md_visit_days", "md_type_ca_cur",
+    "md_pca_status", "md_psa_status", "md_ca", "md_ca_status"
+  ],
+  "tumor_marker": [
+    "cohort", "record_id", "tm_number", "dx_tm_days", "tm_type", "tm_num_result",
+    "tm_result_units", "tm_normal_range_lower", "tm_normal_range_upper"
+  ],
+  "cpt": [
+    "cohort", "record_id", "cpt_number", "ca_seq", "cpt_n_ca_seq", "cpt_genie_sample_id",
+    "dob_cpt_report_days", "dx_cpt_rep_days", "dx_path_proc_cpt_days",
+    "path_proc_number", "path_rep_number", "sample_type", "cpt_seq_assay_id"
+  ],
+  "mutation": [
+    "Hugo_Symbol", "HGVSp_Short", "Variant_Classification", "Chromosome",
+    "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2", "Tumor_Sample_Barcode"
+  ],
+  "structural_variant": [
+    "Sample_Id", "Site1_Hugo_Symbol", "Site2_Hugo_Symbol", "Class", "Annotation"
+  ],
+  "tmb": ["SAMPLE_ID", "tmb", "tmb_bin"],
+  "gene_matrix": ["SAMPLE_ID", "mutations", "cna"],
+  "cna": ["SAMPLE_ID", "Hugo_Symbol", "value"],
+  "radiotherapy_summary_exclusions": ["rt_dose", "rt_fractions", "rt_total_dose", "rt_rt_int"],
+  "excluded_derived_or_future_fields": [
+    "os_*", "pfs_*", "tt_*", "ttnt_*", "last_*", "hybrid_death_*", "age_death_yrs",
+    "n_*", "regimen_drugs", "drugs_dc_ynu", "dx_drug_end_or_lastadm_int_*",
+    "rt_dose", "rt_fractions", "rt_total_dose", "rt_rt_int"
+  ]
+}

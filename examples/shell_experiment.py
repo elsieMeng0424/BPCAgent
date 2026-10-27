@@ -88,6 +88,8 @@ def main() -> int:
             "tool call to read and verify the output before reporting completion."
         ),
     )
+    # Keep the agent transcript beside this experiment's input/output artifacts.
+    agent.work_dir = work_dir
     result = agent.run(
         "Read input.json. Count records and missing values for psa and testosterone. "
         "A missing key or JSON null counts as missing; zero is a valid value. "

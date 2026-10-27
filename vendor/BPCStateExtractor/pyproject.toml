@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bpc-patient-state"
+version = "0.3.0"
+description = "Deterministic, cutoff-safe patient-state extraction for GENIE BPC releases"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pydantic>=2.5,<3"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+bpc-state = "bpc_state.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src", "bpc_state.resources" = "config"}
+packages = ["bpc_state", "bpc_state.resources"]
+
+[tool.setuptools.package-data]
+"bpc_state.resources" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

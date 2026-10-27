@@ -1,7 +1,7 @@
 """统一解析和校验配置，为模型客户端和智能体提供稳定的配置快照。"""
 
 import os
-from typing import Any, ClassVar, Mapping, Optional
+from typing import Any, ClassVar, Literal, Mapping, Optional
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, field_validator
 from .exceptions import ConfigException
 
@@ -18,6 +18,8 @@ class Config(BaseModel):
     model: Optional[str] = None
     api_key: Optional[SecretStr] = None
     base_url: Optional[str] = None
+    api_mode: Literal["chat_completions", "responses"] = "chat_completions"
+    reasoning_effort: Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None = None
     temperature: Optional[float] = Field(0.7, ge=0, allow_inf_nan=False)
     max_tokens: Optional[int] = Field(None, gt=0)
     timeout: float = Field(120, gt=0, allow_inf_nan=False)

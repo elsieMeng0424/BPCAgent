@@ -53,7 +53,7 @@ class UnitPatientStateAgentTests(unittest.TestCase):
         store = PatientArtifactStore(self.work_dir)
         tools = (PatientStateTool(bound, store), PatientEvidenceTool(bound, store))
         self.llm = Mock()
-        with patch("bpcagent.agents.patient_state.create_patient_tools", return_value=tools):
+        with patch("bpcagent.agents.unit_patient_state.create_patient_tools", return_value=tools):
             self.agent = UnitPatientStateAgent(
                 patient_id="P1", cutoff_day=220, data_dir="unused", work_dir=self.work_dir,
                 config=Config(max_tool_iterations=4), llm=self.llm,
@@ -160,11 +160,41 @@ class UnitPatientStateAgentTests(unittest.TestCase):
         self.assertFalse((self.work_dir / "answer.json").exists())
         log = json.loads(self.agent.log_path.read_text())
         self.assertTrue(self.agent.log_path.name.startswith("UnitPatientStateAgent_"))
+        self.assertEqual(self.agent.log_path.parent, self.work_dir / "logs")
         self.assertTrue(log["finished"])
         self.assertEqual(log["validation_attempts"], [{"turn": 2, "status": "passed"}])
         processing = self.llm.invoke.call_args_list[2]
         self.assertEqual([tool["function"]["name"] for tool in processing.kwargs["tools"]], ["run_shell"])
         self.assertIn("Use English", processing.args[0][0]["content"])
+
+    def test_private_extraction_stops_after_tools_and_preserves_reasoning(self):
+        self.extraction[0].reasoning_content = "Extract first"
+        self.extraction[1].reasoning_content = "Resolve evidence"
+        self.llm.invoke.side_effect = self.extraction
+        messages = []
+        self.agent._extract_patient(messages, 3)
+        self.assertEqual(self.llm.invoke.call_count, 2)
+        self.assertEqual(messages[-1]["role"], "tool")
+        self.assertEqual([m["reasoning_content"] for m in messages if m["role"] == "assistant"],
+                         ["Extract first", "Resolve evidence"])
+        self.assertEqual(len(list(self.work_dir.glob("patient_*.json"))), 2)
+
+    def test_private_extraction_does_not_reuse_previous_success(self):
+        self.llm.invoke.side_effect = self.extraction
+        self.agent._extract_patient([], 3)
+        self.llm.invoke.side_effect = [LLMResponse(content="done", finish_reason="stop")]
+        with self.assertRaises(AgentException) as caught:
+            self.agent._extract_patient([], 3)
+        self.assertEqual(caught.exception.code, "incomplete_extraction")
+
+    def test_private_extraction_wrong_date_is_not_completion(self):
+        self.llm.invoke.side_effect = [
+            tool_response("get_patient_state", {"cutoff_day": 219}, "state"),
+            tool_response("get_patient_evidence", {"cutoff_day": 219, "evidence_refs": ["E-test"]}, "evidence"),
+        ]
+        with self.assertRaises(AgentException) as caught:
+            self.agent._extract_patient([], 2)
+        self.assertEqual(caught.exception.code, "step_limit_exceeded")
 
     def test_bad_conversion_is_retried_and_corrected(self):
         self.llm.invoke.side_effect = self.extraction + [

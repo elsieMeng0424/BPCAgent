@@ -1,0 +1,14 @@
+{
+  "mode": "demo", // 可选："demo"（离线、不调用 API）| "live"（真实模型）
+  "plan_file": "pipeline.jsonc", // 声明式阶段定义；null 使用内置默认流程
+  "data_dir": "../../bpc-patient-state/dataset", // 数据集路径；相对本文件所在目录
+  "workspace_root": "../workspace", // 输出目录；相对本文件所在目录
+  "rules_path": null, // null 使用内置规则；也可填自定义规则 JSON 路径
+  "models_file": "models.jsonc", // 模型档位配置
+  "providers_file": "providers.jsonc", // 四类服务商配置
+  "agents_file": "agents.jsonc", // 每个 Agent 的模型档位绑定
+  "secrets_file": "secrets.local.json", // 本机密钥文件（不提交 Git）；同名环境变量优先
+  "top_m": 5, // 正整数：最多输出多少个候选靶点
+  "top_k": 5, // 正整数：最多输出多少个候选药物
+  "max_stage_attempts": 2 // 正整数：每阶段最多尝试次数，包含首次执行
+}

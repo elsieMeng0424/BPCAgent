@@ -1,0 +1,23 @@
+{
+  "version": "1", // 流程版本标签：以后 RSI 提案通过测试后使用新版本
+  "stages": [ // 按数组顺序执行；可只保留前面的阶段，不允许绕过患者/靶点依赖
+    {
+      "agent": "PatientStateAgent", // 本阶段内部提取患者状态、查证据、调用 state_check
+      "max_attempts": null, // null 沿用 workflow.jsonc；或正整数（包含首次执行）
+      "instructions": "Extract and save the bounded patient state, retrieve and save evidence when references exist, and run state_check before submitting."
+    },
+    {
+      "agent": "TargetSelectionAgent", // 只接收已被 Review 接受的上游输出
+      "max_attempts": null,
+      "instructions": "Use the accepted patient state to select supported target hypotheses."
+    },
+    {
+      "agent": "DrugSelectionAgent",
+      "max_attempts": null,
+      "instructions": "Use the accepted targets; report drug evidence and compatibility limitations."
+    }
+  ],
+  "review_instructions": "Review every task turn. If revision is needed, give a specific reason and actionable corrections."
+  // MetaAgent 暂不接入。未来 RSI 生成新的候选流程，校验/评估后用于下一次 run。
+  // 每个阶段输出后必须 Review；不提供关闭 Review 或解除 cutoff 的配置。
+}

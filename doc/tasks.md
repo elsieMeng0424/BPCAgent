@@ -2,7 +2,7 @@
 
 `src/tasks/base.py` 同时定义抽象 `Task` 和 `TaskResult`。基类只规定 `run(...) -> TaskResult`，不规定配置、工作目录、Agent 类型或执行步骤；具体子类定义自己的查询参数。Task 不继承 Agent。
 
-`PatientStateTask` 封装“提取 state/evidence → Docker sandbox 单位处理 → 收集产物”的现有流程。每次调用创建新的 `UnitPatientStateAgent`；不改动 `PatientStateAgent`，也不复制工具循环、转换规则或验收逻辑。
+`PatientStateTask` 封装“提取 state/evidence → Docker sandbox 单位处理 → 收集产物”的现有流程。每次调用创建新的 `UnitPatientStateAgent`，该类直接继承 BasicAgent；内部提取阶段调用同一个 BPCStateExtractor 工具，不依赖已删除的独立 PatientStateAgent 类。普通患者提取请用主 workflow 的单阶段计划。
 
 ## 初始化一次，每次只传查询变量
 
@@ -14,10 +14,10 @@ from dotenv import load_dotenv
 from bpcagent import Config, PatientStateTask, PatientStateTaskConfig, SandboxConfig
 
 load_dotenv(".env", override=False)
-root = Path.cwd().parent
+root = Path.cwd()
 task = PatientStateTask(PatientStateTaskConfig(
-    data_dir=root / "Pathway-Agent" / "dataset",
-    rules_path=root / "Pathway-Agent" / "config" / "field_rules.json",
+    data_dir=root.parent / "bpc-patient-state" / "dataset",  # 本机原有数据；按实际位置修改
+    # rules_path 省略：使用内置 BPCStateExtractor 的规则资源
     workspace_root=root / "workspace",
     agent_config=Config(max_tool_iterations=10),
     sandbox_config=SandboxConfig(image="bpcagent-sandbox:0.1"),
@@ -78,13 +78,13 @@ workspace/YYYYMMDD_HHMMSS_patient-id_cutoff-day/
 
 如果 Agent 已成功而必要文件缺失，Task 返回 `finished=False`、`info.stop_reason=incomplete_artifacts`，保留原始 AgentResult 不变。配置、目录重名和程序异常继续抛出，不伪装成正常结果。打印和退出码由调用方处理。
 
-任务不另存结果 JSON，不生成 `run_result.json`。沿用 Agent 的 `log/UnitPatientStateAgent_*.json`，日志目录仍相对于应用执行时的当前目录；Task 将它转换为绝对路径返回。
+任务不另存结果 JSON，不生成 `run_result.json`。Agent 日志保存在本次任务的 `task_dir/logs/UnitPatientStateAgent_*.json`，与 input/output/scripts 等产物同目录收纳；Task 返回绝对日志路径。
 
 第一版不包含任务队列、批量调度、评分/奖励、断点恢复或通用 Agent 工厂。未来替换/合并 Agent 时，优先修改 `PatientStateTask._create_agent()`，保持查询接口和结果结构稳定。
 
 ## 单位核查与纠错（输出 schema 2.2）
 
-保持 `PatientStateAgent` 的提取逻辑不变。`UnitPatientStateAgent` 使用 shell 读取文件、分析异常、编写并执行脚本；没有 Processor 类。固定规则及宿主验收使用的换算函数位于 `src/agents/unit_rules.py`。模型脚本不导入宿主包，所需规则从只读 `input/unit_inputs.json` 获取。
+`UnitPatientStateAgent` 内部先运行私有提取阶段，再使用 shell 读取文件、分析异常、编写并执行脚本；没有第二个 PatientStateAgent 类。固定规则及宿主验收使用的换算函数位于 `src/agents/unit_rules.py`。模型脚本不导入宿主包，所需规则从只读 `input/unit_inputs.json` 获取。
 
 每次只处理 state 中当前患者、截止日内可见的 `observations.tumor_markers`；不向沙箱挂载完整 dataset。提取器已排除的日期未知、项目缺失等记录不在此次处理范围，结果不是完整原始数据 audit。state 顶层 `evidence_refs` 提供本次可见来源，单独保存的 evidence 文件可能只是其子集；两者源于相同数据，不构成独立佐证。时间边界遵循现有提取器的 `available_day`（肿瘤标志物使用采样日期代理），不声称获得真实报告发布时间。
 

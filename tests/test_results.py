@@ -8,6 +8,11 @@ from unittest.mock import Mock
 from bpcagent import AgentResult, BasicAgent, CalculatorTool, Config, LLMResponse, LLM, ReActAgent, ToolCall, ToolRegistry
 from bpcagent.agents.exceptions import AgentException, ConfigException, LLMException
 
+if __package__:
+    from .logging_support import isolate_agent_logs
+else:
+    from logging_support import isolate_agent_logs
+
 
 def reply(text):
     return LLMResponse(content=text, finish_reason="stop")
@@ -19,6 +24,9 @@ def call(arguments='{"input":"2+3*4"}'):
 
 
 class ResultTests(unittest.TestCase):
+    def setUp(self):
+        isolate_agent_logs(self)
+
     def make_agent(self, cls, *responses, tools=False, **settings):
         llm = Mock(spec=LLM)
         llm.invoke.side_effect = responses

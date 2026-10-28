@@ -1,0 +1,107 @@
+{
+  "checked_on": "2026-10-28",
+  "knowledge_time_policy": "Current research snapshot; do not assume these releases were available at historical BPC patient cutoffs.",
+  "sources": [
+    {
+      "id": "kegg",
+      "title": "KEGG human prostate cancer pathway hsa05215",
+      "kind": "curated_pathway",
+      "url": "https://www.kegg.jp/pathway/hsa05215",
+      "access": "academic_rest_api",
+      "license_url": "https://www.kegg.jp/kegg/rest/",
+      "notes": "Academic internal research only in this collection. No public redistribution. KGML relations retain their types and are not all physical interactions."
+    },
+    {
+      "id": "biogrid",
+      "title": "BioGRID 5.0.262 all-species interactions, chemicals, PTMs and identifiers",
+      "kind": "curated_interactions",
+      "url": "https://downloads.thebiogrid.org/BioGRID/Release-Archive/BIOGRID-5.0.262/",
+      "access": "public_download",
+      "license_url": "https://wiki.thebiogrid.org/doku.php/terms_and_conditions",
+      "notes": "BioGRID advertises MIT availability. Preserve source database and publication attribution, including external chemical sources. ALL means current all-species interaction data plus companion exports, not every redundant format, historical release, or the separate ORCS screen database."
+    },
+    {
+      "id": "pinder",
+      "title": "PINDER 2024-02, KEGG-seeded related subset",
+      "kind": "protein_protein_structures",
+      "url": "https://github.com/pinder-org/pinder",
+      "data_url": "https://pinderdata.org/2024-02/",
+      "access": "public_https",
+      "license_url": "https://github.com/pinder-org/pinder/blob/main/LICENSE",
+      "notes": "Repository license is Apache-2.0; retain original PDB/AlphaFold source attribution and review upstream terms before redistribution. Full index and metadata support filtering; only pathway-related representatives are downloaded as structures. No bulk PDB/mapping archive."
+    },
+    {
+      "id": "nccn-prostate",
+      "title": "NCCN Clinical Practice Guidelines in Oncology: Prostate Cancer",
+      "kind": "clinical_practice_guideline",
+      "url": "https://www.nccn.org/guidelines/guidelines-detail?category=1&id=1459",
+      "document_url": "https://www.nccn.org/professionals/physician_gls/pdf/prostate.pdf",
+      "version": "1.2027",
+      "version_status": "Verified from the user-provided prostate.pdf cover: October 12, 2026. This does not assert it is the newest available version.",
+      "access": "login_and_reuse_permission_required",
+      "permission_url": "https://www.nccn.org/about/permissions/",
+      "rights_reference": "https://jnccn360.org/disclaimer/",
+      "body_ingested": true,
+      "ingestion_scope": "User-requested offline indexing only; 253 PDF pages in the separate document library. Not an assertion of publisher authorization for AI/RAG or redistribution.",
+      "library_path": "derived/guidelines/library",
+      "external_model_allowed": false,
+      "next_action": "Confirm applicable AI/RAG authorization and the selected model destination before enabling external-model access in config/guidelines.jsonc. Do not provide credentials."
+    },
+    {
+      "id": "aua-advanced-2026",
+      "title": "Advanced Prostate Cancer: AUA/SUO Guideline Amendment (2026)",
+      "kind": "clinical_practice_guideline",
+      "url": "https://www.auanet.org/guidelines-and-quality/guidelines/advanced-prostate-cancer",
+      "announcement_url": "https://www.globenewswire.com/news-release/2026/05/12/3293128/0/en/american-urological-association-releases-advanced-prostate-cancer-guideline-amendment.html",
+      "version": "2026 amendment",
+      "access": "ai_reuse_permission_required",
+      "rights_reference": "https://www.auanet.org/guidelines-and-quality/guidelines",
+      "body_ingested": false,
+      "next_action": "AUA lists restrictions on third-party AI use; request permission for this research application before ingesting the guideline."
+    },
+    {
+      "id": "aua-localized-2026",
+      "title": "Clinically Localized Prostate Cancer: AUA/ASTRO Guideline Amendment (2026)",
+      "kind": "clinical_practice_guideline",
+      "url": "https://www.auajournals.org/doi/full/10.1097/JU.0000000000005060",
+      "version": "2026 amendment",
+      "access": "ai_reuse_permission_required",
+      "rights_reference": "https://www.auanet.org/guidelines-and-quality/guidelines",
+      "body_ingested": false
+    },
+    {
+      "id": "asco-mcrpc-2026",
+      "title": "Systemic Therapy in Patients With Metastatic Castration-Resistant Prostate Cancer: ASCO Living Guideline",
+      "kind": "clinical_practice_guideline",
+      "url": "https://ascopubs.org/doi/abs/10.1200/JCO-26-01898",
+      "version": "2026.1.4",
+      "access": "ai_reuse_permission_required",
+      "rights_reference": "https://www.asco.org/about-asco/legal/terms-use",
+      "permission_url": "https://www.asco.org/about-asco/legal/copyright-permission",
+      "body_ingested": false,
+      "next_action": "Request permission covering AI/RAG from permissions@asco.org or licensing@asco.org; personal reading access does not establish this right."
+    },
+    {
+      "id": "asco-noncastrate-2023",
+      "title": "Initial Management of Noncastrate Advanced, Recurrent, or Metastatic Prostate Cancer: ASCO Guideline Update",
+      "kind": "clinical_practice_guideline",
+      "url": "https://ascopubs.org/doi/10.1200/JCO.23.00155",
+      "version": "2023 publication; check for superseding updates before use",
+      "access": "ai_reuse_permission_required",
+      "rights_reference": "https://www.asco.org/about-asco/legal/terms-use",
+      "permission_url": "https://www.asco.org/about-asco/legal/copyright-permission",
+      "body_ingested": false
+    },
+    {
+      "id": "nci",
+      "title": "Prostate Cancer Treatment (PDQ) - Health Professional Version",
+      "kind": "evidence_summary_not_guideline",
+      "version": "Page updated 2025-05-14; retrieved 2026-10-28",
+      "url": "https://www.cancer.gov/types/prostate/hp/prostate-treatment-pdq",
+      "access": "public_text_reuse_with_attribution",
+      "license_url": "https://www.cancer.gov/policies/copyright-reuse",
+      "scope_reference": "https://www.cancer.gov/publications/pdq/information-summaries",
+      "notes": "NCI text is generally reusable unless otherwise indicated. Index text only, omit images/tables that may contain separately licensed material. This is an evidence summary, NOT a clinical practice guideline or replacement for NCCN/ASCO/AUA."
+    }
+  ]
+}

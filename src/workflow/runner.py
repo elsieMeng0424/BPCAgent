@@ -2,15 +2,20 @@
 
 from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
+import sys
 
 from ..agents import Config
 from ..log_paths import create_run_directory
 from ..tools.patient_shell import PatientShellConfig
+from ..tools.guidelines import GuidelineToolConfig
+from ..tools.guideline_library import GuidelineLibrary
+from ..tools.jev import JevEvaluator, JevSettings
 from .agents import AGENTS
 from .demo import DemoLLM
 from .definition import WorkflowPlan
 from .state import SharedPatientState, digest, save_json
 from .request import resolve_request
+from .reporting import ConsoleTee, print_turn_report, validate_print_limit
 
 
 class AgentWorkflow:
@@ -25,19 +30,40 @@ class AgentWorkflow:
 
     def __init__(self, *, data_dir, workspace_root, rules_path=None, mode="demo",
                  agent_configs=None, plan=None,
-                 top_m=5, top_k=5, max_stage_attempts=2, llm_factory=None, patient_shell=None):
+                 top_m=5, top_k=5, max_stage_attempts=2, llm_factory=None, patient_shell=None,
+                 guidelines=None, guideline_vision_config=None, jev=None, jev_api_key=None,
+                 jev_client_factory=None, guideline_debug_tools=False):
         if mode not in {"demo", "live"}:
             raise ValueError("mode must be demo or live")
         for name, value in (("top_m", top_m), ("top_k", top_k), ("max_stage_attempts", max_stage_attempts)):
             if type(value) is not int or value < 1:
                 raise ValueError(f"{name} must be a positive integer")
         self.mode = mode
+        if type(guideline_debug_tools) is not bool:
+            raise ValueError("guideline_debug_tools must be a boolean")
+        self.guideline_debug_tools = guideline_debug_tools
         self.data_dir = Path(data_dir)
         self.workspace_root = Path(workspace_root)
         self.rules_path = rules_path
         self.top_m, self.top_k = top_m, top_k
         self.max_stage_attempts = max_stage_attempts
         self.patient_shell = patient_shell if isinstance(patient_shell, PatientShellConfig) else PatientShellConfig.model_validate(patient_shell or {})
+        self.guidelines = guidelines if isinstance(guidelines, GuidelineToolConfig) else GuidelineToolConfig.model_validate(guidelines or {})
+        self.jev = jev if isinstance(jev, JevSettings) else JevSettings.model_validate(jev or {})
+        if mode == "live" and jev_client_factory is not None:
+            raise ValueError("jev_client_factory is only for offline tests/demo")
+        self._jev_key = jev_api_key
+        self._jev_client_factory = jev_client_factory
+        self.guideline_vision_config = None
+        if guideline_vision_config is not None:
+            if mode != "live":
+                raise ValueError("Demo mode must not use a live guideline vision model")
+            if not self.guidelines.enabled or not self.guidelines.vision_profile:
+                raise ValueError("Enable guidelines and select a vision_profile before providing its model configuration")
+            self.guideline_vision_config = Config.resolve(guideline_vision_config, environ={})
+            self.guideline_vision_config.require_model()
+            if self.guideline_vision_config.api_mode != "chat_completions":
+                raise ValueError("Guideline vision requires chat_completions with image support")
         # Serialize and revalidate to isolate this run configuration from caller mutations.
         definition = plan.model_dump() if isinstance(plan, WorkflowPlan) else plan
         self._plan_json = WorkflowPlan.model_validate({} if definition is None else definition).model_dump_json()
@@ -68,8 +94,17 @@ class AgentWorkflow:
         """Return a validated copy so callers cannot mutate the stored plan."""
         return WorkflowPlan.model_validate_json(self._plan_json)
 
-    def run(self, input=None, *, patient_id=None, cutoff_day=None, cancer_id=None, start_day=None):
-        """Create one experiment directory and capture this run's console output."""
+    def run(self, input=None, *, patient_id=None, cutoff_day=None, cancer_id=None, start_day=None,
+            verbose=False, max_print_chars=4000):
+        """Run with optional live console mirroring and detailed per-turn reports.
+
+        ``verbose=True`` prints every task/review turn as it finishes, including
+        failed turns. ``max_print_chars=None`` displays complete tool payloads.
+        Display settings never change the model's context budget or saved data.
+        """
+        if type(verbose) is not bool:
+            raise ValueError("verbose must be a boolean")
+        validate_print_limit(max_print_chars)
         request = resolve_request(input, data_dir=self.data_dir, patient_id=patient_id,
                                   cutoff_day=cutoff_day, start_day=start_day, cancer_id=cancer_id)
         directory = create_run_directory(self.workspace_root).resolve()
@@ -77,32 +112,57 @@ class AgentWorkflow:
         log_path = directory / "logs" / "console.log"
         # stdout/stderr redirection is process-wide: concurrent experiments must
         # use separate processes, not threads, to keep console logs isolated.
-        with log_path.open("x", encoding="utf-8") as log, redirect_stdout(log), redirect_stderr(log):
-            print("Workflow started", flush=True)
-            try:
-                result = self._run(directory=directory, **request)
-            except BaseException as exc:
-                # Do not copy raw exceptions (which may contain credentials).
-                print(f"Workflow aborted: {type(exc).__name__}", flush=True)
-                raise
-            print(f"Workflow finished: {result['status']}", flush=True)
-            return result
+        caller_stdout, caller_stderr = sys.stdout, sys.stderr
+        with log_path.open("x", encoding="utf-8") as log:
+            stdout = ConsoleTee(log, caller_stdout) if verbose else log
+            stderr = ConsoleTee(log, caller_stderr) if verbose else log
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                return self._run_logged(directory, request, verbose, max_print_chars)
 
-    def _run(self, *, directory, patient_id, cutoff_day, cancer_id, start_day, input):
+    def _run_logged(self, directory, request, verbose, max_print_chars):
+        """Keep all console output, including turn reports, in the experiment log."""
+        print("Workflow started", flush=True)
+        try:
+            result = self._run(directory=directory, **request,
+                               verbose=verbose, max_print_chars=max_print_chars)
+        except BaseException as exc:
+            # Do not copy raw exceptions (which may contain credentials).
+            print(f"Workflow aborted: {type(exc).__name__}", flush=True)
+            raise
+        print(f"Workflow finished: {result['status']}", flush=True)
+        return result
+
+    def _run(self, *, directory, patient_id, cutoff_day, cancer_id, start_day, input,
+             verbose=False, max_print_chars=4000):
         """Execute task/review pairs with bounded retries and one shared snapshot."""
         plan = self.plan
+        jev_evaluator = JevEvaluator(self.jev, api_key=self._jev_key, allow_network=self.mode == "live",
+                                     client=self._jev_client_factory() if self.jev.enabled and self._jev_client_factory else None)
         shared = SharedPatientState(patient_id=patient_id, cutoff_day=cutoff_day, cancer_id=cancer_id,
                                     data_dir=self.data_dir, rules_path=self.rules_path, start_day=start_day)
+        guideline_library, guideline_snapshot = None, None
+        if self.guidelines.enabled:
+            guideline_library = GuidelineLibrary(self.guidelines.library_config)
+            try:
+                guideline_snapshot = guideline_library.snapshot_info()
+            except (OSError, ValueError):
+                guideline_snapshot = {"status": "unavailable", "reason": "Build or repair the configured document library."}
         result = {
             "schema_version": "2.0", "mode": self.mode, "status": "running", "finished": False,
-            "clinical_validation": "not_performed", "scientific_tools": "placeholders",
+            "clinical_validation": "not_performed", "scientific_tools": "guideline_debug_fixtures" if self.guideline_debug_tools else "placeholders",
             "patient_id": patient_id, "cutoff_day": cutoff_day, "start_day": start_day,
             "input": input, "patient_shell": self.patient_shell.model_dump(mode="json"),
+            "guidelines": self.guidelines.model_dump(mode="json"),
+            "guideline_debug_tools": self.guideline_debug_tools,
+            "guideline_vision_model": self.guideline_vision_config.model if self.guideline_vision_config else None,
+            "guideline_snapshot": guideline_snapshot,
+            "jev": jev_evaluator.metadata(),
             "patient_state_sha256": None, "task_dir": str(directory.resolve()),
             "log_path": str(directory / "logs" / "console.log"),
             "models": {role: cfg.model for role, cfg in self.configs.items()},
             "llm_settings": {role: {"provider": cfg.default_provider, "model": cfg.model,
                                     "api_mode": cfg.api_mode, "reasoning_effort": cfg.reasoning_effort,
+                                    "proxy_port": cfg.proxy_port,
                                     "context": cfg.context.model_dump()}
                              for role, cfg in self.configs.items()},
             "stages": [], "turns": [], "accepted_outputs": {},
@@ -130,13 +190,21 @@ class AgentWorkflow:
             step_dir = directory / f"{number:03d}_{role}"
             step_dir.mkdir()
             save_json(step_dir / "context.json", context)
+            if verbose:
+                print(f"\n>>> Starting turn {number:03d}: {role} | stage={context['stage']} "
+                      f"| attempt={context['attempt']} | reviews_turn={context.get('reviews_turn')}", flush=True)
             output, error, artifacts = None, None, {}
+            agent = None
             try:
                 # Offline: obtain a model double for this role. Live: passing None
                 # makes BasicAgent build the real LLM from self.configs[role].
                 llm = self.llm_factory(role) if self.llm_factory else None
                 agent = AGENTS[role](shared=shared, context=context, directory=step_dir,
                                      config=self.configs[role], llm=llm,
+                                     guidelines=self.guidelines, guideline_vision_config=self.guideline_vision_config,
+                                     guideline_library=guideline_library,
+                                     jev_evaluator=jev_evaluator,
+                                     guideline_debug_tools=self.guideline_debug_tools,
                                      **({"shell_config": self.patient_shell} if role == "PatientStateAgent" else {}))
                 artifacts = agent.artifacts
                 run = agent.run(input)
@@ -153,12 +221,16 @@ class AgentWorkflow:
                 "status": "completed" if success else "failed",
                 "patient_state_sha256": shared.read()["patient_state_sha256"] if shared.ready else None,
                 "output": output, "error": error,
+                "evidence_assessments": agent.jev_tool.results if agent is not None and agent.jev_tool else [],
                 "artifacts": {key: ([str(Path(p).relative_to(directory)) for p in value]
                                     if isinstance(value, list) else str(Path(value).relative_to(directory)))
                               for key, value in artifacts.items()},
             }
             save_json(step_dir / "output.json", envelope)
             result["turns"].append(envelope)
+            result["jev"] = jev_evaluator.metadata()
+            if verbose:
+                print_turn_report(envelope, directory, max_chars=max_print_chars)
             return envelope
 
         for spec in plan.stages:
@@ -208,5 +280,7 @@ class AgentWorkflow:
             save_json(directory / "shared_patient_state.json", snapshot)
             # Compatible with the separate bpc_state_extractor evaluation exporter hash.
             save_json(directory / "patient_state.json", snapshot["patient_state"])
+            # Inspect exactly the compact projection returned by patient-state tools.
+            save_json(directory / "patient_model_view.json", shared.model_view())
         save_json(directory / "workflow_result.json", result)
         return result

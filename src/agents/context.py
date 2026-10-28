@@ -53,7 +53,7 @@ class ContextManager:
     """
 
     reader_name = "read_context_record"
-    protected_tools = {"get_stage_context", "state_check", "submit_output", reader_name}
+    protected_tools = {"submit_output"}
 
     def __init__(self, policy):
         self.policy = policy
@@ -101,21 +101,31 @@ class ContextManager:
 
     def _candidate(self, message):
         content = message.get("content")
-        if not isinstance(content, str) or len(content) < self.policy.min_compact_chars:
+        if not isinstance(content, str):
             return False
         if message["role"] == "tool":
             try:
                 result = json.loads(content)
             except ValueError:
                 return False
-            return (isinstance(result, dict) and result.get("status") == "success"
+            threshold = 512 if isinstance(result, dict) and result.get("tool_name") == self.reader_name else self.policy.min_compact_chars
+            return (len(content) >= threshold and isinstance(result, dict) and result.get("status") == "success"
                     and result.get("tool_name") not in self.protected_tools)
         # Never rewrite reasoning items, function arguments, instructions or users.
-        return (message["role"] == "assistant" and not message.get("tool_calls")
+        return (len(content) >= self.policy.min_compact_chars and message["role"] == "assistant" and not message.get("tool_calls")
                 and message.get("response_items") is None and message.get("reasoning_content") is None)
 
     def _archive(self, message):
         original = message["content"]
+        if message["role"] == "tool":
+            result = json.loads(original)
+            if result.get("tool_name") == self.reader_name:
+                # Retire old readback pages without creating recursive archives.
+                # The original record and exact page coordinates remain readable.
+                page = result["data"]
+                return encode({"context_compacted": True, "read_tool": self.reader_name,
+                               "notice": "Previously read page retired; re-read original coordinates if needed.",
+                               **{key: page[key] for key in ("record_id", "pointer", "offset", "next_offset", "total_chars")}})
         identity = "ctx_" + hashlib.sha256(original.encode("utf-8")).hexdigest()
         self.records[identity] = original
         descriptor = {"context_compacted": True, "record_id": identity,
@@ -159,7 +169,8 @@ class ContextManager:
             # Prefer older outputs. Recent large TOOL results can be archived only
             # when necessary to meet the hard budget, with exact readback available.
             old = [i for i, m in enumerate(messages) if i < boundary and self._candidate(m)]
-            recent = [i for i, m in enumerate(messages) if i >= boundary and m["role"] == "tool" and self._candidate(m)]
+            recent = [i for i, m in enumerate(messages) if i >= boundary and m["role"] == "tool" and self._candidate(m)
+                      and json.loads(m["content"]).get("tool_name") != self.reader_name]
             for i in old + recent:
                 current = self.estimate(request, options)
                 if current <= target or (i in recent and current <= budget):

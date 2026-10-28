@@ -211,6 +211,10 @@ class Agent(ABC):
             self._save_history(messages)
         return AgentResult(output={"text": text}, transcript=deepcopy(messages), finished=True)
 
+    def _completed_tool_output(self):
+        """Optional host-validated terminal result, checked only after a paired batch."""
+        return None
+
     def _run_tool_loop(self, messages: list, input: str, max_tool_iterations: int, **kwargs) -> str:
         """共享原生工具循环；每轮请求一次模型，全部结果配对后才进入下一轮。"""
         if "tools" in kwargs:
@@ -236,6 +240,13 @@ class Agent(ABC):
             for call in response.tool_calls:
                 result = self._execute_tool_call(call)
                 messages.append(Message(result.model_dump_json(), "tool", tool_call_id=call.id).to_dict())
+            completed = self._completed_tool_output()
+            if completed is not None:
+                # A validated terminal tool does not need a paid acknowledgement
+                # request, which can otherwise fail after successful submission.
+                self.add_message(Message(input, "user"))
+                self.add_message(Message(completed, "assistant"))
+                return completed
         raise AgentException("Model iteration limit reached before a final response was received", code="step_limit_exceeded")
 
     def __str__(self) -> str:

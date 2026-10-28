@@ -1,0 +1,19 @@
+{
+  "jev_file": "jev.jsonc", // Optional TypeSafe evidence evaluator; its enabled switch defaults to false
+  "guidelines": {
+    "enabled": true, // Register read-only document tools for every workflow role
+    "library_config": "guidelines.jsonc", // Relative to this tools.jsonc; build with scripts/guidelines.py first
+    "vision_profile": null, // null: no image inference; otherwise an image-capable models.jsonc profile using chat_completions
+    "max_vision_calls": 2 // Per Agent turn; rendering alone never claims the LLM has seen an image
+  },
+  "patient_shell": {
+    "mode": "local", // local: host Shell, Docker off | sandbox: Docker on | disabled: no Shell tool
+    "allow_unsafe_local": true, // Required for local mode; commands have the current user's host filesystem/network permissions
+    "sandbox": {
+      "image": "bpcagent-sandbox:0.1", // Used only in sandbox mode; build this image before running
+      "docker_path": null, // null: auto-discover; explicit relative paths resolve against this tools.jsonc
+      "command_timeout": 60.0, // Seconds per command; also applies to local mode
+      "max_output_bytes": 32768 // Bytes per stdout/stderr stream; also applies to local mode
+    }
+  }
+}

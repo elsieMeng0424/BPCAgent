@@ -61,9 +61,9 @@ natural-language boundaries must agree with them.
 | --- | --- |
 | `bpc_state_extractor` | Calls the bundled BPCStateExtractor through the bounded shared-state adapter; saves snapshot JSON. Takes no model-supplied scope/path arguments. |
 | `get_patient_state` | Alias of the same bounded extraction action. |
-| `get_patient_evidence` | Resolves and saves only references from this snapshot at the same cutoff. |
+| `get_patient_evidence` | Resolves and saves only references from this snapshot at the same cutoff; available to all workflow roles after reading state. |
 | `state_check` | Checks completeness, schema, time boundaries, missingness and units. Required before submission. |
-| `run_shell` | Real Shell for optional inspection/computation, available after extraction. Default: Docker isolation. |
+| `run_shell` | Real Shell for optional inspection/computation after extraction; backend selected in `config/tools.jsonc`. |
 | `get_shared_patient_state`, `get_stage_context` | Read shared facts, the task, stage instructions and review feedback. |
 | `submit_output` | Validates the structured result and required preceding actions. |
 | `read_context_record` | Retrieves exact archived tool output when context management is enabled. |
@@ -72,6 +72,14 @@ The extractor package and the Agent-facing extraction tool deliberately share
 the name `bpc_state_extractor`. The package contains the extraction implementation;
 the registered tool is its cutoff-bound adapter. It is not another Agent.
 
+Extraction and shared-state reads return the compact `bpc-model-view-v1` format,
+not the canonical on-disk schema. Evidence source bodies are fetched on demand;
+observation records appear only once, with recent IDs as an index. Repeated
+records use explicit column/row tables, preserving null, status, reason and
+evidence references. `state_check` also uses lossless record tables. See
+[model view format](patient-model-view.md). Full state files and Shell inputs
+retain their original schema and evidence bodies.
+
 Offline `demo` uses a scripted model: actual extraction/checks run, but no LLM is
 consulted. Its default script does not call Shell. The regression suite includes
 a separate scripted native-tool loop that executes real Shell against synthetic
@@ -79,17 +87,31 @@ bounded inputs, then submits output and runs Review.
 
 ## Shell isolation and artifacts
 
-`config/workflow.jsonc` configures `patient_shell`:
+`config/workflow.jsonc` selects `"tools_file": "tools.jsonc"`. The tool file contains:
 
 ```jsonc
-"patient_shell": {
-  "mode": "sandbox", // sandbox | local | disabled
-  "allow_unsafe_local": false,
-  "sandbox": {"image": "bpcagent-sandbox:0.1"}
+{
+  "patient_shell": {
+    "mode": "local", // local: Docker off | sandbox: Docker on | disabled: no Shell
+    "allow_unsafe_local": true, // Local commands have the current user's host permissions
+    "sandbox": {"image": "bpcagent-sandbox:0.1"}
+  }
 }
 ```
 
-Build the existing image and start Docker as described in [sandbox setup](sandbox.md).
+The checked-in file temporarily enables local Shell, so Docker is not required.
+This is not isolation: commands can access host files and the network with the
+current user's permissions. Local mode cannot enforce cutoff-only data access.
+The library default, when no tools file is selected, remains `sandbox`.
+CLI and notebook use the same file. Recreate the configuration and workflow after
+editing it. `request.json` and per-turn Shell audit records preserve the active mode.
+`command_timeout` and `max_output_bytes` under `sandbox` also apply in local mode;
+Docker-specific limits do not apply there. An explicit `docker_path` is resolved
+relative to the tools file. The former inline workflow `patient_shell` block is
+no longer accepted; move it into the tools file.
+
+To enable Docker, select `sandbox`, build the existing image and start Docker as
+described in [sandbox setup](sandbox.md). See also [current host setup](docker-host-setup.md).
 Container startup is lazy, so a run that does not request Shell needs no Docker.
 Missing Docker/image or sandbox failure produces a tool error, **never an automatic
 fallback to local execution**. The Agent must disclose failed/unavailable checks;

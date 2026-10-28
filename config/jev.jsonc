@@ -1,0 +1,14 @@
+{
+  "enabled": true, // true | false: re-create WorkflowConfiguration and AgentWorkflow after changing this switch
+  "endpoint": "https://api.typesafe.ai/v1/systemone", // Native TypeSafe endpoint, NOT an OpenAI-compatible base_url; HTTPS only
+  "model": "jev-1.14.0", // Pin a verified version for reproducibility; aliases such as jev-latest can change
+  "api_key_env": "TYPESAFE_API_KEY", // Environment wins over the same key in secrets.local.json; never put credentials here
+  "rubrics_file": "jev-rubrics.jsonc", // Relative to this file; rubric version and hash are recorded for each assessment
+  "allow_patient_data": false, // Set true only after confirming permission to send selected cutoff-safe records to TypeSafe
+  "timeout_seconds": 30, // Per HTTP attempt; no implicit retries or redirects
+  "max_calls_per_turn": 4, // Includes failed provider attempts; every Agent retry creates a new turn
+  "max_calls_per_run": 24, // Shared across all task/review turns and retries in one workflow run
+  "max_input_bytes": 24000, // UTF-8 serialized request cap, not a tokenizer estimate; oversize inputs are rejected, never truncated
+  "max_response_bytes": 64000, // Bound provider response size
+  "review_confidence_threshold": 0.8 // Provisional uncertainty flag, NOT clinical approval or a calibrated correctness threshold
+}

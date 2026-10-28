@@ -45,6 +45,97 @@ class WorkflowConfigurationTests(unittest.TestCase):
         self.assertEqual(values["top_k"], 5)
         self.assertEqual(cfg.workflow_options({"data_dir": "my-data"})["data_dir"], "my-data")
 
+    def test_tool_file_paths_and_immutable_execution_settings(self):
+        directory = self.config / "tools"
+        directory.mkdir()
+        self.write("workflow.jsonc", {"data_dir": "data", "tools_file": "tools/execution.jsonc"})
+        self.write("tools/execution.jsonc", {"patient_shell": {
+            "mode": "local", "allow_unsafe_local": True,
+            "sandbox": {"docker_path": "../bin/docker", "command_timeout": 17.0}}})
+        configuration = WorkflowConfiguration(self.workflow)
+        self.write("tools/execution.jsonc", {"patient_shell": {"mode": "disabled"}})
+        first = configuration.workflow_options({})
+        self.assertNotIn("tools_file", first)
+        self.assertEqual(first["patient_shell"]["mode"], "local")
+        self.assertEqual(first["patient_shell"]["sandbox"]["command_timeout"], 17.0)
+        self.assertEqual(first["patient_shell"]["sandbox"]["docker_path"], str(self.config / "bin/docker"))
+        first["patient_shell"]["mode"] = "disabled"
+        self.assertEqual(configuration.workflow_options({})["patient_shell"]["mode"], "local")
+        self.assertEqual(WorkflowConfiguration(self.workflow).workflow_options({})["patient_shell"]["mode"], "disabled")
+
+    def test_invalid_or_missing_tool_file_does_not_select_a_fallback(self):
+        self.write("workflow.jsonc", {"data_dir": "data", "tools_file": "tools.jsonc"})
+        with self.assertRaises(FileNotFoundError):
+            WorkflowConfiguration(self.workflow)
+        for settings in ({"patient_shell": {"mode": "local"}},
+                         {"patient_shell": {"mode": "unknown"}},
+                         {"unknown_tool": {}}):
+            self.write("tools.jsonc", settings)
+            with self.subTest(settings=settings), self.assertRaisesRegex(ValueError, "tools"):
+                WorkflowConfiguration(self.workflow)
+
+    def test_no_tool_file_uses_library_sandbox_default(self):
+        self.assertEqual(WorkflowConfiguration(self.workflow).workflow_options({})["patient_shell"]["mode"], "sandbox")
+
+    def test_guideline_paths_and_separate_vision_profile(self):
+        self.write("workflow.jsonc", {"data_dir": "data", "tools_file": "tools.jsonc"})
+        self.write("tools.jsonc", {"guidelines": {"enabled": True, "library_config": "guidelines.jsonc",
+                                                "vision_profile": "task"}})
+        self.write("providers.jsonc", {"providers": {"openai": {
+            "base_url": "https://example.invalid/v1", "api_key_env": "OPENAI_API_KEY",
+            "api_mode": "chat_completions"}}})
+        configuration = WorkflowConfiguration(self.workflow)
+        self.assertEqual(configuration.workflow_options({})["guidelines"]["library_config"],
+                         str(self.config / "guidelines.jsonc"))
+        configs = configuration.model_configs(environ={})
+        self.assertEqual(configs["guideline_vision_config"].model, "task")
+        self.assertEqual(configs["guideline_vision_config"].api_key.get_secret_value(), "local-secret")
+        self.assertNotIn("local-secret", repr(configs["guideline_vision_config"]))
+
+    def test_unsupported_vision_protocol_fails_explicitly(self):
+        self.write("workflow.jsonc", {"data_dir": "data", "tools_file": "tools.jsonc"})
+        self.write("tools.jsonc", {"guidelines": {"enabled": True, "library_config": "guidelines.jsonc",
+                                                "vision_profile": "task"}})
+        with self.assertRaisesRegex(ValueError, "vision.*chat_completions"):
+            WorkflowConfiguration(self.workflow).model_configs(environ={})
+
+    def configure_jev(self, enabled):
+        self.write("workflow.jsonc", {"data_dir": "data", "tools_file": "tools.jsonc"})
+        self.write("tools.jsonc", {"jev_file": "nested/jev.jsonc"})
+        (self.config / "nested").mkdir(exist_ok=True)
+        self.write("nested/jev.jsonc", {"enabled": enabled, "rubrics_file": "rubrics.jsonc"})
+
+    def test_disabled_jev_needs_no_key_or_rubric_and_does_not_change_existing_providers(self):
+        self.configure_jev(False)
+        configuration = WorkflowConfiguration(self.workflow)
+        self.assertFalse(configuration.workflow_options({})["jev"]["enabled"])
+        self.assertNotIn("jev_api_key", configuration.model_configs(environ={}))
+
+    def test_jev_key_precedence_and_path_resolution(self):
+        self.configure_jev(True)
+        self.write("secrets.local.json", {"OPENAI_API_KEY": "local-secret", "TYPESAFE_API_KEY": "local-jev-secret"})
+        configuration = WorkflowConfiguration(self.workflow)
+        options = configuration.workflow_options({})
+        self.assertEqual(options["jev"]["rubrics_file"], str(self.config / "nested/rubrics.jsonc"))
+        self.assertNotIn("api_key", options["jev"])
+        local = configuration.model_configs(environ={})["jev_api_key"]
+        environment = configuration.model_configs(environ={"TYPESAFE_API_KEY": "env-jev-secret"})["jev_api_key"]
+        self.assertEqual(local.get_secret_value(), "local-jev-secret")
+        self.assertEqual(environment.get_secret_value(), "env-jev-secret")
+        self.assertNotIn("env-jev-secret", repr(environment))
+        with self.assertRaisesRegex(ValueError, "TYPESAFE_API_KEY"):
+            configuration.model_configs(environ={"TYPESAFE_API_KEY": ""})
+
+    def test_jev_toggle_applies_to_new_configuration_not_active_snapshot(self):
+        self.configure_jev(False)
+        first = WorkflowConfiguration(self.workflow)
+        self.write("nested/jev.jsonc", {"enabled": True, "rubrics_file": "rubrics.jsonc"})
+        self.assertFalse(first.workflow_options({})["jev"]["enabled"])
+        second = WorkflowConfiguration(self.workflow)
+        self.assertTrue(second.workflow_options({})["jev"]["enabled"])
+        with self.assertRaisesRegex(ValueError, "TYPESAFE_API_KEY"):
+            second.model_configs(environ={})
+
     def test_plan_file_snapshot_and_only_active_model_bindings(self):
         self.write("workflow.jsonc", {"data_dir": "data", "plan_file": "pipeline.jsonc"})
         self.write("pipeline.jsonc", {"version": "patient-only", "stages": [{"agent": "PatientStateAgent"}]})

@@ -8,6 +8,8 @@
 | 文件 | 内容 | 纳入 Git |
 | --- | --- | --- |
 | `workflow.jsonc` | 数据/输出路径、demo/live、Top-M/K、重试次数 | 是 |
+| `tools.jsonc` | Tool execution settings, including local / Docker / disabled Shell | Yes |
+| `database.jsonc` | Knowledge-source versions, data root, direct-first/proxy fallback and PINDER subset limits | Yes |
 | `pipeline.jsonc` | 流程版本、任务阶段、阶段指令、独立重试预算和 Review 指令 | 是 |
 | `providers.jsonc` | 服务商地址、API 协议、密钥名称 | 是 |
 | `models.jsonc` | 可复用模型档位：模型 ID、推理强度、超时等 | 是 |
@@ -45,8 +47,17 @@ Meta 继续关闭。OpenAI 档位保留用于后续切换。默认运行模式�
 才调用付费 API。参见 [DeepSeek 官方接口说明](https://api-docs.deepseek.com/quick_start/agent_integrations/)
 及 [思考模式说明](https://api-docs.deepseek.com/guides/thinking_mode/)。
 
-本机 DeepSeek 直连有效；若终端继承的代理影响连接，可以仅对本次进程移除代理变量，
-无需修改密钥文件或全局网络配置。`test.ipynb` 新增的完整流程示例包含这个可选步骤。
+`workflow.jsonc.proxy_port` defaults to `28374`; LLM, vision and Jev requests use
+the local HTTP proxy at `http://127.0.0.1:28374`. Set `null` for direct access.
+This is outbound API routing, not an application server port. Environment proxy
+variables are ignored and failed proxy connections do not silently fall back to
+direct access. Re-create the workflow after changing this value. Database download
+routing remains separately configured in `database.jsonc`.
+
+`guideline_debug_tools` is enabled for the current notebook experiment. It permits
+only host-issued NCI text-match fixtures with `debug_only: true`; scores are not
+clinical ranking or eligibility. Disable it to restore empty-candidate-only
+scientific placeholders. Library constructors default to disabled.
 
 例如 `models.jsonc` 中：
 
@@ -103,15 +114,23 @@ cd /home/u2021202188/BPCAgent
 省略 `--mode live` 时默认 demo，不读取密钥文件，也不连接模型服务。
 Patient ID and date boundaries are supplied per run, either in `--request` /
 `workflow.run(text)` or as structured arguments. They are not model/environment settings.
-`workflow.jsonc.patient_shell` selects `sandbox` (default), `local` (requires explicit
-`allow_unsafe_local=true`) or `disabled`; see [patient Shell configuration](../doc/patient-request.md).
+`workflow.jsonc.tools_file` points to `tools.jsonc`. Its `patient_shell.mode` selects
+`sandbox` (Docker on), `local` (Docker off, requires `allow_unsafe_local=true`) or
+`disabled` (no Shell tool). The checked-in tools file temporarily selects **local**;
+commands have the current user's host filesystem and network permissions.
+Without a tools file, the library defaults to sandbox mode. Missing or invalid
+explicit files fail immediately; sandbox errors never trigger local fallback.
+The former inline `workflow.jsonc.patient_shell` block must move to the tools file.
+Configuration is snapshotted at load time: recreate `WorkflowConfiguration` and
+the workflow after editing files (restart the notebook kernel after code changes).
+See [patient Shell configuration](../doc/patient-request.md).
 
 配置规则：
 
 - 未指定 `--config` 时，在当前工作目录查找 `config/workflow.jsonc`；找不到时使用
   默认参数并要求 `--data-dir`。不会在机器上的其他目录搜索密钥。
 - `--config /path/to/workflow.jsonc` 显式选择配置，文件缺失/格式错误直接报错。
-- 文件内所有相对路径相对于 `workflow.jsonc` 所在目录；CLI 覆盖的路径相对于当前目录。
+- Workflow paths are relative to `workflow.jsonc`; a tool's `docker_path` is relative to its tools file. CLI path overrides are relative to the current directory.
 - 工作流参数：CLI > workflow.jsonc > 内置默认值。
 - 新格式的模型名称/地址以 models.jsonc/providers.jsonc 为准，启用的 Agent 显式绑定，
   不再用 TASK/META 环境变量隐式更换模型。
@@ -166,7 +185,30 @@ result = workflow.run(patient_id="GENIE-DFCI-051542", cutoff_day=249)
 
 Each profile in `models.jsonc` accepts a `context` object; an Agent binding in
 `agents.jsonc` can override individual fields. Checked-in live profiles enable a
-local 32,000 input budget with a conservative byte-based token estimate. Their
+local input budget with a conservative byte-based token estimate (128,000 for the
+DeepSeek debug profiles; 32,000 for the other example profiles). Their
 model and gateway window sizes remain null until verified/configured; these are
 not claimed provider capacities. See [context management](../doc/context.md)
 for the budget formula, original-source retrieval and migration details.
+
+## Document tools
+
+`tools.jsonc` contains `guidelines.enabled`, a relative `library_config` path,
+an optional `vision_profile`, and a per-turn `max_vision_calls` budget.
+`guidelines.jsonc` maintains source paths, versions, processing permissions and
+optional OCR settings. A vision profile reuses `models.jsonc`, `providers.jsonc`
+and the existing secret-loading mechanism; it must support Chat Completions image
+input. It is separate from task/review models and disabled by default.
+Build the index with `scripts/guidelines.py build` before retrieval.
+See [document reading](../doc/guideline-reading.md) for workflow details and limits.
+
+## Optional Jev evaluator
+
+`tools.jsonc` references `jev_file: "jev.jsonc"`. That file owns `enabled`, the
+native TypeSafe endpoint/model, `api_key_env`, patient-data permission, budgets
+and the review flag threshold. `jev-rubrics.jsonc` contains the versioned questions.
+This is not another OpenAI-compatible chat provider. `TYPESAFE_API_KEY` uses the
+same environment-over-local-secrets precedence as other keys, but is only required
+when Jev is enabled in live mode. Never put its value in tracked configuration.
+After toggling the switch, construct a new configuration/workflow instance.
+See [Jev evidence assessment](../doc/jev-evidence.md) for setup and output semantics.

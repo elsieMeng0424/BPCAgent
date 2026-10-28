@@ -74,11 +74,13 @@ class BundledPatientStateTests(unittest.TestCase):
                                       llm=DemoLLM("PatientStateAgent"))
         registry = agent.tool_registry
         state = agent.extract()["patient_state"]
+        canonical = shared.read()["patient_state"]
         ref = next(iter(state["evidence_refs"]))
         with redirect_stdout(io.StringIO()):
             result = registry.execute_tool("get_patient_evidence", {"evidence_refs": [ref]})
             self.assertEqual(result.status, "success")
-            self.assertEqual(result.data[ref], state["evidence_refs"][ref])
+            self.assertIsInstance(state["evidence_refs"], list)
+            self.assertEqual(result.data[ref], canonical["evidence_refs"][ref])
             for extra in ({"cutoff_day": 200}, {"patient_id": "P2"}, {"data_dir": "/tmp"}):
                 rejected = registry.execute_tool("get_patient_evidence", {"evidence_refs": [ref], **extra})
                 self.assertEqual(rejected.error.code, "invalid_arguments")
@@ -88,7 +90,8 @@ class BundledPatientStateTests(unittest.TestCase):
             rejected = registry.execute_tool("get_patient_evidence", {"evidence_refs": [next(iter(future_refs))]})
             self.assertEqual(rejected.error.code, "execution_error")
         self.assertNotIn("evaluation", str(registry.to_openai_tools()))
-        self.assertEqual(shared.read()["patient_state"], state)
+        self.assertEqual(shared.read()["patient_state"], canonical)
+        self.assertEqual(shared.model_view()["patient_state"], state)
 
 
 if __name__ == "__main__":

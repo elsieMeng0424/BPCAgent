@@ -59,12 +59,15 @@ class JSONCConfigTests(unittest.TestCase):
 
     def test_repository_configs_load_without_real_secrets(self):
         repository = Path(__file__).resolve().parents[1]
-        for name in ("workflow", "providers", "models", "agents", "pipeline"):
+        for name in ("workflow", "providers", "models", "agents", "pipeline", "tools", "jev"):
             filename = f"{name}.jsonc"
             (self.root / filename).write_text((repository / "config" / filename).read_text())
         cfg = WorkflowConfiguration(self.root / "workflow.jsonc")
         self.assertEqual(cfg.workflow_options({})["mode"], "demo")
-        configs = cfg.model_configs(environ={"DEEPSEEK_API_KEY": "test-only"})["agent_configs"]
+        # Keep this offline configuration test valid with Jev enabled or disabled.
+        configs = cfg.model_configs(environ={
+            "DEEPSEEK_API_KEY": "test-only", "TYPESAFE_API_KEY": "test-only",
+        })["agent_configs"]
         self.assertEqual(len(configs), 4)
         for value in configs.values():
             self.assertEqual(value.api_key.get_secret_value(), "test-only")

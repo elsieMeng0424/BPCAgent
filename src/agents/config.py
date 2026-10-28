@@ -24,6 +24,7 @@ class Config(BaseModel):
     temperature: Optional[float] = Field(0.7, ge=0, allow_inf_nan=False)
     max_tokens: Optional[int] = Field(None, gt=0)
     timeout: float = Field(120, gt=0, allow_inf_nan=False)
+    proxy_port: int | None = Field(None, ge=1, le=65535, strict=True)
     max_tool_iterations: int = Field(3, gt=0)
     max_steps: int = Field(5, gt=0)
     context: ContextPolicy = Field(default_factory=ContextPolicy)

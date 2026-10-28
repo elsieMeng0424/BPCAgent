@@ -40,10 +40,15 @@ class LLM:
         self.config = Config.resolve(config, overrides=overrides)
         self.config.require_model()
         self._request_defaults = deepcopy(kwargs)
+        import httpx
         self._client = OpenAI(
             api_key=self.config.api_key.get_secret_value(),
             base_url=self.config.base_url,
             timeout=self.config.timeout,
+            http_client=httpx.Client(
+                proxy=f"http://127.0.0.1:{self.config.proxy_port}" if self.config.proxy_port else None,
+                trust_env=False,
+            ),
         )
 
     @property

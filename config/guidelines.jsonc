@@ -1,0 +1,35 @@
+{
+  "data_root": "../database/data", // Relative to this file; document paths below stay inside this root
+  "library_dir": "derived/guidelines/library", // Separate from the existing BioGRID/PINDER SQLite database
+  "sources": [
+    {
+      "id": "nci-prostate-pdq",
+      "title": "NCI Prostate Cancer Treatment (PDQ), Health Professional Version",
+      "version": "2025-05-14_retrieved-2026-10-28", // Fixed knowledge snapshot, not patient event time
+      "publication_date": "2025-05-14",
+      "kind": "evidence_summary", // clinical_practice_guideline | evidence_summary | test_document
+      "format": "sections_json", // pdf | sections_json (attributed heading/anchor/text records)
+      "path": "derived/guidelines/nci-sections.json",
+      "source_url": "https://www.cancer.gov/types/prostate/hp/prostate-treatment-pdq",
+      "processing_allowed": true,
+      "external_model_allowed": true, // Separate destination permission; tools always check this before returning text
+      "permission_basis": "https://www.cancer.gov/policies/copyright-reuse ; attributed NCI text only; images and tables excluded. PDQ is not a clinical practice guideline."
+    },
+    {
+      "id": "nccn-prostate",
+      "title": "NCCN Prostate Cancer",
+      "version": "1.2027",
+      "publication_date": "2026-10-12",
+      "kind": "clinical_practice_guideline",
+      "format": "pdf",
+      "path": "raw/guidelines/prostate.pdf",
+      "source_url": "https://www.nccn.org/professionals/physician_gls/pdf/prostate.pdf",
+      "processing_allowed": true, // User requested local indexing of the supplied PDF; not a publisher license grant
+      "external_model_allowed": false, // Also confirm authorization for the selected external API provider
+      "permission_basis": "User explicitly requested local ingestion of their supplied PDF on 2026-10-28. Scope: offline text extraction, Markdown/JSON exports and local search only. Publisher authorization for AI/RAG, external models and redistribution is not confirmed; https://www.nccn.org/about/permissions/",
+      "ocr": "off", // off | auto: OCR only pages without native text; requires Tesseract and language data
+      "ocr_language": "eng",
+      "max_pages": 500
+    }
+  ]
+}

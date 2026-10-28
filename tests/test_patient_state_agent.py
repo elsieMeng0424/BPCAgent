@@ -108,7 +108,8 @@ class PatientStateAgentTests(unittest.TestCase):
     def test_empty_evidence_snapshot_saves_explicit_empty_artifact(self):
         payload = {"patient_state": {"meta": {"patient_id": "P0", "target_cancer_id": None}, "evidence_refs": {}},
                    "state_check": {"complete": False}, "normalized_markers": []}
-        shared = SimpleNamespace(cutoff_day=50, ready=True, extract=lambda: payload, read=lambda: payload)
+        shared = SimpleNamespace(cutoff_day=50, ready=True, extract=lambda: payload, read=lambda: payload,
+                                 model_view=lambda: {"patient_state": {"evidence_refs": []}})
         agent = self.agent(shared=shared)
         self.prepare(agent)
         agent.submit({"summary": "no evidence", "limitations": ["No evidence references in snapshot"]})

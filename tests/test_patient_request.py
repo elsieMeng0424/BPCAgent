@@ -19,6 +19,7 @@ from bpcagent.workflow import AgentWorkflow
 from bpcagent.workflow.agents import PatientStateAgent
 from bpcagent.workflow.demo import DemoLLM
 from bpcagent.workflow.cli import main
+from bpcagent.workflow.config import WorkflowConfiguration
 from bpcagent.workflow.request import RequestClarificationError, resolve_request
 from bpcagent.workflow.state import SharedPatientState
 
@@ -119,14 +120,24 @@ class PatientRequestTests(unittest.TestCase):
                             "assert s[\"meta\"][\"cutoff_day\"] == 220; print(\"cutoff verified\")'"}))])
                 return super().invoke(messages, **kwargs)
 
-        workflow = AgentWorkflow(data_dir=self.data, workspace_root=self.root / "runs",
-                                 plan={"stages": [{"agent": "PatientStateAgent"}]}, llm_factory=ShellDemo,
-                                 patient_shell={"mode": "local", "allow_unsafe_local": True})
-        result = workflow.run(REQUEST)
+        config = self.root / "workflow.json"
+        config.write_text(json.dumps({"data_dir": str(self.data), "workspace_root": str(self.root / "runs"),
+                                      "tools_file": "tools.json"}))
+        (self.root / "tools.json").write_text(json.dumps({
+            "patient_shell": {"mode": "local", "allow_unsafe_local": True}}))
+        options = WorkflowConfiguration(config).workflow_options({
+            "plan": {"stages": [{"agent": "PatientStateAgent"}]}})
+        workflow = AgentWorkflow(**options, llm_factory=ShellDemo)
+        with patch("bpcagent.tools.patient_shell.DockerSandbox") as docker:
+            docker.directories = ("input", "scripts", "output", "tmp")
+            result = workflow.run(REQUEST)
+            docker.assert_not_called()
         self.assertTrue(result["finished"])
         self.assertEqual([t["agent"] for t in result["turns"]], ["PatientStateAgent", "ReviewAgent"])
         root = Path(result["task_dir"])
         audit = json.loads((root / result["turns"][0]["artifacts"]["shell_audit"]).read_text())
+        self.assertEqual(audit["mode"], "local")
+        self.assertEqual(json.loads((root / "request.json").read_text())["patient_shell"]["mode"], "local")
         self.assertEqual(audit["executions"][0]["exit_code"], 0)
         transcript = json.loads((root / "001_PatientStateAgent/transcript.json").read_text())
         shell_result = next(json.loads(m["content"]) for m in transcript

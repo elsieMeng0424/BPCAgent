@@ -5,11 +5,13 @@ import os
 from pathlib import Path
 from typing import Literal, Mapping
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
 
 from ..agents import Config
 from ..agents.context import ContextPolicy
 from ..tools.patient_shell import PatientShellConfig
+from ..tools.guidelines import GuidelineToolConfig
+from ..tools.jev import JevSettings
 from .definition import WorkflowPlan
 
 
@@ -19,18 +21,28 @@ class SettingsModel(BaseModel):
 
 class WorkflowSettings(SettingsModel):
     mode: Literal["demo", "live"] = "demo"
+    proxy_port: int | None = Field(28374, ge=1, le=65535)
+    guideline_debug_tools: bool = False
     data_dir: str | None = None
     workspace_root: str = "../workspace"
     rules_path: str | None = None
     models_file: str = "models.jsonc"
     providers_file: str = "providers.jsonc"
     agents_file: str = "agents.jsonc"
+    tools_file: str | None = None
     secrets_file: str = "secrets.local.json"
     top_m: int = Field(5, gt=0)
     top_k: int = Field(5, gt=0)
     max_stage_attempts: int = Field(2, gt=0)
-    patient_shell: PatientShellConfig = Field(default_factory=PatientShellConfig)
     plan_file: str | None = None
+
+
+class ToolsSettings(SettingsModel):
+    """Host-owned tool execution settings, separate from model and stage settings."""
+
+    patient_shell: PatientShellConfig = Field(default_factory=PatientShellConfig)
+    guidelines: GuidelineToolConfig = Field(default_factory=GuidelineToolConfig)
+    jev_file: str | None = None
 
 
 ProviderName = Literal["openai", "claude", "deepseek", "gateway"]
@@ -127,7 +139,7 @@ def relative_path(value, parent):
 
 
 class WorkflowConfiguration:
-    """Paths in files are relative to workflow.jsonc, CLI paths remain cwd-relative."""
+    """Resolve paths relative to their owning config file and snapshot settings."""
 
     def __init__(self, path=None):
         self.path = Path(path).expanduser().resolve() if path is not None else None
@@ -135,10 +147,34 @@ class WorkflowConfiguration:
         plan = WorkflowPlan() if self.settings.plan_file is None else validate(
             WorkflowPlan, read_object(relative_path(self.settings.plan_file, self.path.parent)), "workflow plan")
         self._plan_json = plan.model_dump_json()
+        tools = ToolsSettings()
+        jev = JevSettings()
+        if self.settings.tools_file is not None:
+            tools_path = Path(relative_path(self.settings.tools_file, self.path.parent))
+            tools = validate(ToolsSettings, read_object(tools_path), "tools")
+            if tools.jev_file is not None:
+                jev_path = Path(relative_path(tools.jev_file, tools_path.parent))
+                jev = validate(JevSettings, read_object(jev_path), "Jev")
+                if jev.rubrics_file is not None:
+                    jev = jev.model_copy(update={"rubrics_file": relative_path(jev.rubrics_file, jev_path.parent)})
+            if tools.guidelines.library_config is not None:
+                tools = tools.model_copy(update={"guidelines": tools.guidelines.model_copy(update={
+                    "library_config": relative_path(tools.guidelines.library_config, tools_path.parent)})})
+            docker_path = tools.patient_shell.sandbox.docker_path
+            if docker_path is not None:
+                sandbox = tools.patient_shell.sandbox.model_copy(update={
+                    "docker_path": Path(relative_path(docker_path, tools_path.parent))})
+                tools = tools.model_copy(update={"patient_shell": tools.patient_shell.model_copy(
+                    update={"sandbox": sandbox})})
+        self._tools_json = tools.model_dump_json()
+        self._jev_json = jev.model_copy(update={"proxy_port": self.settings.proxy_port}).model_dump_json()
 
     def workflow_options(self, overrides):
-        values = self.settings.model_dump(exclude={"models_file", "secrets_file", "providers_file", "agents_file", "plan_file"})
+        values = self.settings.model_dump(exclude={"models_file", "secrets_file", "providers_file", "agents_file", "tools_file", "plan_file", "proxy_port"})
         values["plan"] = self.workflow_plan().model_dump()
+        values["patient_shell"] = ToolsSettings.model_validate_json(self._tools_json).patient_shell.model_dump(mode="json")
+        values["guidelines"] = ToolsSettings.model_validate_json(self._tools_json).guidelines.model_dump(mode="json")
+        values["jev"] = JevSettings.model_validate_json(self._jev_json).model_dump(mode="json")
         if self.path:
             for key in ("data_dir", "workspace_root", "rules_path"):
                 if values[key] is not None:
@@ -168,7 +204,14 @@ class WorkflowConfiguration:
             if any(not isinstance(v, str) for v in secrets.values()):
                 raise ValueError("Local secrets must map environment variable names to strings")
         effective_plan = self.workflow_plan() if plan is None else WorkflowPlan.model_validate(plan)
-        return self._agent_configs(model_data, secrets, env, effective_plan)
+        result = self._agent_configs(model_data, secrets, env, effective_plan)
+        jev = JevSettings.model_validate_json(self._jev_json)
+        if jev.enabled:
+            key = env[jev.api_key_env] if jev.api_key_env in env else secrets.get(jev.api_key_env)
+            if not isinstance(key, str) or not key.strip():
+                raise ValueError(f"Enabled Jev requires {jev.api_key_env} in the environment or local secrets")
+            result["jev_api_key"] = SecretStr(key)
+        return result
 
     def _agent_configs(self, model_data, secrets, env, plan):
         profiles = validate(ProfilesSettings, model_data, "profiles").profiles
@@ -180,13 +223,14 @@ class WorkflowConfiguration:
         if not set(required) <= set(agents):
             raise ValueError("agents.jsonc must configure all active task agents and ReviewAgent")
         configs = {}
-        for role in required:
-            binding = agents[role]
-            if binding.llm not in profiles:
-                raise ValueError(f"Unknown LLM profile referenced by {role}")
-            profile = profiles[binding.llm]
+
+        def resolve_profile(profile_name, label, context_override=None):
+            """Resolve task and optional vision profiles through the same credential path."""
+            if profile_name not in profiles:
+                raise ValueError(f"Unknown LLM profile referenced by {label}")
+            profile = profiles[profile_name]
             if profile.provider not in providers:
-                raise ValueError(f"Unknown provider referenced by {role}")
+                raise ValueError(f"Unknown provider referenced by {label}")
             provider = providers[profile.provider]
             if not provider.base_url or not provider.base_url.strip():
                 raise ValueError(f"Configure base_url for provider {profile.provider} before selecting it")
@@ -196,10 +240,22 @@ class WorkflowConfiguration:
                 raise ValueError("Claude compatibility API ignores reasoning_effort; set it to null")
             key = provider.api_key_env
             values = profile.model_dump(exclude={"provider"})
-            if binding.context is not None:
-                values["context"].update(binding.context)
+            if context_override is not None:
+                values["context"].update(context_override)
             values.update(base_url=provider.base_url, api_mode=provider.api_mode,
+                          proxy_port=self.settings.proxy_port,
                           api_key=env[key] if key in env else secrets.get(key),
                           default_provider=profile.provider)
-            configs[role] = Config(**Config.resolve(overrides=values, environ={}).model_dump())
-        return {"agent_configs": configs}
+            return Config(**Config.resolve(overrides=values, environ={}).model_dump())
+
+        for role in required:
+            binding = agents[role]
+            configs[role] = resolve_profile(binding.llm, role, binding.context)
+        result = {"agent_configs": configs}
+        guidelines = ToolsSettings.model_validate_json(self._tools_json).guidelines
+        if guidelines.enabled and guidelines.vision_profile is not None:
+            vision = resolve_profile(guidelines.vision_profile, "guideline vision")
+            if vision.api_mode != "chat_completions":
+                raise ValueError("Guideline vision currently requires chat_completions with image support")
+            result["guideline_vision_config"] = vision
+        return result

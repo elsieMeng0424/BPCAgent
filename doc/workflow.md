@@ -83,6 +83,8 @@ python -m venv .venv
 Review 迭代编排和文件输出实际执行。Demo Review 仅测试控制流程，不做医学评审。
 
 `--start-day` 只控制 `recent_observations` 的开始日期（包含边界）。
+The model-facing view represents this selection as `recent_observation_ids`;
+the canonical shared snapshot retains `recent_observations` for compatibility.
 `patient_state` 保留截止日及以前的全部可用历史，避免丢失更早开始的用药和诊断。
 省略时近期视图包含全部可见观察。`--cutoff-day` 是包含边界的可用时间截止点，
 日期原点为患者首个 BPC 癌症确诊日。
@@ -110,6 +112,7 @@ workspace/YYYY-MM-DD/run_<uuid>/
   workflow_plan.json             # 本次运行固定的计划；默认重试预算另存于 request.json
   patient_state.json             # 原始 Schema 1.2，可与离线评估哈希匹配
   shared_patient_state.json      # 原始状态、近期视图、单位转换、完整性检查
+  patient_model_view.json        # Compact tool-return view with tables and on-demand evidence IDs
   001_PatientStateAgent/
     patient_state_day_<cutoff>_001.json
     patient_evidence_day_<cutoff>_002.json # 可分批查询，序号递增
@@ -126,7 +129,40 @@ workspace/YYYY-MM-DD/run_<uuid>/
 Python、CLI 和 Notebook 均由 `AgentWorkflow.run()` 自动创建同样的目录结构，
 控制台输出保存到本次实验的 `logs/console.log`，返回值 `log_path` 是其绝对路径。
 Notebook 不再单独创建外部日志；每个 Agent 的结构化调用轨迹仍在各阶段的 `transcript.json` 中，
-不重复复制到 logs。跨午夜时，本次实验的日志和产物仍在同一个启动日期目录中。
+跨午夜时，本次实验的日志和产物仍在同一个启动日期目录中。
+
+The notebook now defaults to `VERBOSE=True`. Console activity streams to the cell,
+and each task/Review turn prints its input context, assistant text, tool calls and
+results, structured output, failure code, context-budget events and Shell audit
+before the next turn starts. The same report is saved in `logs/console.log`.
+The original transcript remains in the turn directory.
+
+```python
+result = workflow.run(REQUEST, verbose=True, max_print_chars=4000)
+```
+
+`max_print_chars` limits each displayed tool/context payload; set it to `None` for
+full payloads. Structured outputs, error codes, execution/pagination flags and
+budget events are always shown in full. Display limits do not change the model
+context or saved records. The library defaults to `verbose=False`.
+
+Replay any saved experiment without model calls or a new workspace directory:
+
+```python
+from bpcagent.workflow import print_workflow_report
+
+print_workflow_report("workspace/YYYY-MM-DD/run_<uuid>", max_chars=4000)
+# An in-memory result is also accepted: print_workflow_report(result).
+```
+
+`context_budget_exceeded` means the local request estimator could not fit protected
+content after compaction; it is not a provider-reported context-window size.
+`step_limit_exceeded` means the Agent exhausted its model/tool iterations before
+a final response. Check whether `submit_output` and any required tools were called.
+Archived-output readbacks currently stay protected in context: many broad or tiny
+pages can exhaust the input budget or iteration allowance. Select specific JSON
+Pointer fields rather than paging through an entire snapshot. A failed optional
+Shell call is shown separately from the Agent's final stop reason.
 
 如果 workflow 抛出未预期异常，日志仍会关闭并保留，记录异常类型（不主动记录可能含密钥的异常正文）；
 可从 `workflow.last_run_dir` 找到本次目录。由于 stdout/stderr 重定向影响整个进程，
@@ -186,7 +222,7 @@ OpenAI 推理工具调用走 Responses，兼容服务商可配置 Chat Completio
 | 单位整理 | 复用上游换算函数；PSA 的明确 ng/mL、ug/L 统一为 ng/mL；明确总/游离睾酮的 ng/dL 保留；歧义项标记待核验 |
 | search、pathway_graph、graph_ranking | 占位；KEGG/PINDER/BioGRID/指南尚未加载 |
 | drug_catalog、dock、ept_meet、drug_metrics | 占位；FDA 药物与计算评分尚未接入 |
-| PatientStateAgent / run_shell | Real Shell; cutoff-bound input export, default Docker isolation; diagnostic output does not update shared facts |
+| PatientStateAgent / run_shell | Real Shell; cutoff-bound input export, backend selected in `config/tools.jsonc`; diagnostic output does not update shared facts |
 | Target/Drug / bash | Placeholder; does not execute commands |
 | ReviewAgent | Demo 为流程验证；Live 为独立模型复核，输出 proceed/revise/block |
 | MetaAgent / rsi_evaluate | 不运行；保留类及占位工具，调用入口注释；自动实验、评分、应用尚未实现 |
@@ -216,10 +252,11 @@ mkdir -p offline_evaluation
 用 `meta.input_state_sha256` 与工作流 `patient_state_sha256` 连接输入和评估文件。
 当前离线导出器包含后续影像、门诊、肿瘤标志物，尚不包含用于药物 Hit@K 的
 未来新用药标签。
-The patient-stage Shell now defaults to Docker isolation and mounts only bounded
-exports, not raw records or the offline evaluation directory. Directory separation
-alone is not a security boundary; explicitly enabled local Shell cannot guarantee
-cutoff isolation. See [patient Shell safety](patient-request.md).
+In `sandbox` mode, the patient-stage Shell mounts only bounded exports, not raw
+records or the offline evaluation directory. `config/tools.jsonc` currently selects
+`local` to run without Docker; the library default remains `sandbox`. Directory
+separation alone is not a security boundary; local Shell cannot guarantee cutoff
+isolation. See [patient Shell safety](patient-request.md).
 
 ## 指南和药物数据库从哪里获取
 
@@ -251,6 +288,12 @@ PatientStateAgent 必须在本轮保存状态，并调用 `get_patient_evidence`
 查询只允许当前快照引用和宿主固定 cutoff。无引用时保存 status=no_evidence_refs 的空证据文件。
 每次 Review 重试都重新检查这些要求，不能用上轮的完成标志跳过提取、证据保存或 state_check。
 工具来源与更新方法见 [内置工具说明](../vendor/README.md)。
+
+All roles can query `get_patient_evidence` after reading the shared state; the
+PatientState role still has the stricter per-turn extraction/check/evidence
+requirements above. Compact model projections live in `workflow/model_view.py`,
+with regression coverage in `tests/test_patient_model_view.py`. The full snapshot
+and evidence remain on disk. See [model view format](patient-model-view.md).
 
 后续接入位置：`workflow/agents.py` 的工具注册和候选验收，
 `workflow/models.py` 的输出契约，`workflow/runner.py` 的阶段编排，

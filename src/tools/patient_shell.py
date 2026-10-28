@@ -38,12 +38,16 @@ class PatientShellTool(Tool[ShellArgs]):
         self.inputs = inputs
         self.executions = []
         self.sandbox = None
+        execution = (
+            "Configured mode: sandbox. Docker runs at /workspace with read-only input and no network. "
+            if self.settings.mode == "sandbox" else
+            "Configured mode: local. Commands run on the host in this turn's shell directory with the current user's permissions. "
+        )
         super().__init__("run_shell", (
             "Run a real shell command after bpc_state_extractor. Inspect input/patient_state.json, "
             "input/state_check.json, input/normalized_markers.json and input/patient_evidence.json. "
             "Write diagnostics to scripts/, output/ or tmp/; never claim those files modify the shared snapshot. "
-            "Default: isolated Docker at /workspace with read-only input and no network; use python3. "
-            "Local mode, if explicitly enabled by the host, has host privileges and is NOT isolated. "
+            + execution + "Use relative input/, scripts/, output/ and tmp/ paths and python3. "
             "Check exit_code and timed_out, disclose failures, and do not invent a successful check. "
             "Do not access raw datasets, credentials, future labels or background services."
         ))

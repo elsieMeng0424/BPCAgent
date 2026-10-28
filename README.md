@@ -1,5 +1,42 @@
 # BPCAgent
 
+Optional Jev evidence assessment is configured in [config/jev.jsonc](config/jev.jsonc)
+and enabled in the current live-debug configuration (library default: disabled). It adds support/consistency/relevance judgments, separate
+judge confidence and per-turn audit; it does not modify patient facts or approve
+treatment. See [Jev setup and semantics](doc/jev-evidence.md).
+
+Page-aware document retrieval is available: text search, cited section reading,
+on-demand original-page rendering and an optional separate vision model. See
+[document reading](doc/guideline-reading.md) and [source configuration](config/guidelines.jsonc).
+NCI text and the user-provided NCCN PDF are locally indexed. NCCN external-model
+access remains disabled pending confirmation of applicable AI/RAG authorization.
+Document tools do not remove the current scientific-placeholder safety guards.
+
+## Live debug example
+
+`test.ipynb` uses patient `051542` through relative day **100**. Run its workflow
+section in the `BPCAgent (.venv)` kernel, or run
+`.venv/bin/python scripts/run_workflow_notebook.py` to execute that section and
+save real cell outputs in place. Live execution incurs API charges; old calculator
+cells are not rerun. Each run retains its own logs, including failed attempts.
+Notebook execution dependencies are available via `pip install -e '.[notebook]'`.
+
+`config/workflow.jsonc` sets `proxy_port: 28374`: outbound LLM, vision and Jev
+requests use `http://127.0.0.1:28374`. Set it to `null` for direct connections.
+This is a proxy port, not an application listening port. Environment proxy
+variables are ignored by these explicit clients; no silent direct fallback occurs.
+
+`guideline_debug_tools: true` enables `guideline_target_scores` and
+`guideline_drug_scores` from `src/tools/guideline_debug.py`. These return a fixed,
+provenance-checked NCI PDQ topic-match example, **not clinical recommendations**.
+A `debug_score` of 1 only means the topic is present in the retrieved section;
+the pathway label and drug mapping are hand-written fixtures, not graph ranking,
+docking, Jev confidence, treatment efficacy or patient eligibility. Drug output
+requires an accepted upstream target. Host validation rejects invented or altered
+fixture values. Set the switch to `false` to restore empty-candidate-only guards.
+NCCN remains unavailable to external models. NCI PDQ is an evidence summary, not
+a clinical practice guideline. Review remains mandatory for every task turn.
+
 一个用于注册工具、创建智能体并执行工具调用的 Python 框架。完整安装、配置与接口说明见 [doc/detail.md](doc/detail.md)。
 
 ## 可配置的迭代工作流
@@ -17,6 +54,10 @@ Python 入口统一为 `AgentWorkflow`；[test.ipynb](test.ipynb) 的“完整 A
 `logs/console.log` 保存控制台输出，各阶段目录保存输入、输出和调用轨迹。
 Python、CLI、Notebook 共用此布局，不再向顶层 `log/` 分散写入日志。
 一次 `workflow.run()` 只创建一个实验目录；Agent、Review 和重试都放在该目录内部。
+Notebook defaults to `verbose=True`: it streams console activity and prints detailed
+task/Review reports as turns finish. Set `MAX_PRINT_CHARS=None` to display full tool
+payloads. Use `print_workflow_report(run_directory)` to inspect an existing run without
+calling a model; see [workflow logging](doc/workflow.md).
 连续调用多次才产生多个实验目录。回归测试的 Agent 日志写入系统临时目录，测试结束后清理。
 2026-10-27 遗留的 455 个测试日志目录已归档到当日 `_test_runs/`，保留原文件，
 当日 `RUN_INDEX.md` 列出 3 次 workflow 实验。历史目录整理工具默认只预览：
@@ -36,7 +77,8 @@ result = workflow.run("看下BPC数据集病人051542前220天的病例，推荐
 
 `051542` must uniquely match the dataset; `前220天` means inclusive relative day 220.
 PatientStateAgent calls the registered `bpc_state_extractor` tool and can use real
-`run_shell` for diagnostics (Docker isolation by default). See
+`run_shell` for diagnostics. `config/tools.jsonc` currently selects local Shell
+(Docker off); select `sandbox` for Docker isolation or `disabled` to remove Shell. See
 [natural-language requests and Shell configuration](doc/patient-request.md) for a
 complete runnable example, supported date forms, safety boundaries and limitations.
 
@@ -59,9 +101,16 @@ python -m bpcagent.workflow.cli --data-dir ../bpc-patient-state/dataset \
 `models.jsonc` 管理模型/推理档位，`agents.jsonc` 给启用的 Agent 分别绑定 LLM；
 `pipeline.jsonc` 管理阶段、阶段提示和重试上限；
 `secrets.local.json` 按服务商密钥名称存放 API key（Git 忽略）。
+`tools.jsonc` manages tool execution settings, including the patient Shell backend.
 在仓库目录运行会自动加载配置，也可以传 `--config /path/to/workflow.jsonc`。
 
 ## 架构总览：统一 PatientStateAgent
+
+Research database acquisition, local SQLite queries and guideline permission
+requirements are documented in [database/README.md](database/README.md).
+`config/database.jsonc` controls source releases, direct-first downloading and
+bounded KEGG-seeded PINDER structure collection. Data files stay outside Git;
+the workflow's scientific connectors are not automatically enabled by collection.
 
 目前是“通用 Agent 执行框架 + BPC 患者提取工具 + 可配置的任务／Review 编排”，
 不是已经完成靶点和药物推荐的医学系统。建议先读多 Agent workflow，再按需深入底层。
@@ -73,7 +122,7 @@ python -m bpcagent.workflow.cli --data-dir ../bpc-patient-state/dataset \
 | Workflow 编排 | 调用任务 Agent，再调用 Review；决定继续、重做或停止，保存产物 | [runner.py](src/workflow/runner.py) |
 | 角色与共享状态 | 角色提示词、可用工具、结构化提交、截止日绑定的患者快照 | [workflow/agents.py](src/workflow/agents.py)、[state.py](src/workflow/state.py) |
 | 通用执行框架 | 模型请求 → 工具调用 → 工具结果回传 → 下一次模型请求 | [agents/agents.py](src/agents/agents.py)、[tools/tool.py](src/tools/tool.py) |
-| Extraction and execution tools | Bounded state/evidence extraction; real patient-stage Shell, Docker-isolated by default | [Bundled extractor](vendor/README.md), [Patient tools](doc/patient-request.md) |
+| Extraction and execution tools | Bounded state/evidence extraction; patient Shell backend selected in `tools.jsonc` | [Bundled extractor](vendor/README.md), [Patient tools](doc/patient-request.md) |
 
 患者提取统一使用 workflow 版 `PatientStateAgent`；高级单位纠错任务作为单独能力保留：
 
@@ -107,6 +156,7 @@ BPCAgent/
 ├── test.ipynb                        # 交互示例；workflow 配置、运行、查看结果三个单元
 ├── config/
 │   ├── workflow.jsonc                # 模式、数据/输出路径、top_m/top_k、默认尝试次数
+│   ├── tools.jsonc                   # Tool execution: local / Docker sandbox / disabled
 │   ├── pipeline.jsonc                # 阶段列表、逐阶段指令/尝试次数、Review 指令
 │   ├── agents.jsonc                  # Agent 名称 → 模型档位名称
 │   ├── models.jsonc                  # 模型档位 → provider/model/推理强度/请求参数
@@ -127,6 +177,7 @@ BPCAgent/
 │   │   ├── request.py                # Resolve explicit patient/day scope from natural-language tasks
 │   │   ├── agents.py                 # 五种角色、提示词、工具注册、submit_output 校验
 │   │   ├── state.py                  # SharedPatientState、完整性检查、保守单位转换
+│   │   ├── model_view.py             # Compact model input: evidence IDs, recent indexes and lossless tables
 │   │   ├── models.py                 # 各阶段输出与 Review/Meta 输出的数据结构
 │   │   └── demo.py                   # 离线 DemoLLM；预设模型响应，不是流程调度器
 │   ├── agents/                       # 可复用的单 Agent 执行框架
@@ -180,7 +231,8 @@ BPCAgent/
 `workflow-config` 单元。`WorkflowConfiguration.workflow_options()` 处理路径和流程参数；
 live 模式额外调用 `model_configs()`，按 `agents → models → providers → secrets/环境变量`
 解析每个启用角色的模型配置。同名环境变量优先于本机密钥文件。demo 不加载模型密钥。
-配置文件内路径相对 `workflow.jsonc` 所在目录，CLI 显式路径相对当前目录。
+Workflow paths are relative to `workflow.jsonc`; tool executable paths are relative
+to their tools file. Explicit CLI paths are relative to the current directory.
 直接实例化 `AgentWorkflow(...)` 不会自动读 `config/`，需像 Notebook 一样先调用配置加载器。
 
 **2. 进入调度器。** 看 [runner.py](src/workflow/runner.py) 的 `__init__()`、`run()`、`_run()`。
@@ -191,9 +243,10 @@ live 模式额外调用 `model_configs()`，按 `agents → models → providers
 
 **3. 进入 PatientState 阶段。** 看 [workflow/agents.py](src/workflow/agents.py) 的
 `WorkflowAgent.__init__()`：它将角色提示词和阶段指令组合，并为角色注册工具。
-所有角色都有 `get_shared_patient_state`、`get_stage_context`、`submit_output`；
+Every role has `get_shared_patient_state`, `get_patient_evidence`, `get_stage_context`
+and `submit_output`; evidence queries are cutoff-bound and saved in that role's turn directory.
 PatientState also exposes `bpc_state_extractor` (`get_patient_state` alias),
-`get_patient_evidence`, `state_check`, and real `run_shell` unless disabled.
+`state_check`, and real `run_shell` unless disabled.
 模型不能自由改患者 ID 或 cutoff，这些由宿主绑定。
 
 **4. Patient JSON extraction.** `bpc_state_extractor` → `SharedPatientState.extract()` →
@@ -214,6 +267,14 @@ PatientState also exposes `bpc_state_extractor` (`get_patient_state` alias),
 
 数字缺失保留 `null`，用 `field_status` 解释 unknown 等语义；不会把每个空字段都改成字符串。
 Workflow 的单位处理只做已知单位的保守转换，保留原始值，不会自动修复所有可疑单位。
+
+The list above describes canonical storage. Model-facing extraction/shared-state
+tools return `bpc-model-view-v1`: evidence IDs without source bodies, recent
+observation IDs instead of duplicated records, and lossless `columns`/`rows`
+tables for repeated fields. Null values retain their exact field-status annotations.
+The full snapshot, hash, Shell inputs and host checks are unchanged. New runs save
+`patient_model_view.json` alongside the canonical files for inspection. See
+[compact model input](doc/patient-model-view.md) for the format and decoding example.
 
 **5. 看一个 Agent 内部如何调用工具。** 跳到 [agents/agents.py](src/agents/agents.py) 的
 `_run_with_tools()`、`_run_tool_loop()` 和 `_execute_tool_call()`：
@@ -300,6 +361,7 @@ workspace/日期/run_<uuid>/
 ├── 006_ReviewAgent/
 ├── patient_state.json               # 原始 cutoff 快照（成功提取后保存）
 ├── shared_patient_state.json        # 加上近期视图、单位转换、完整性报告和哈希
+├── patient_model_view.json          # Compact model-facing projection; full facts remain in canonical files
 └── workflow_result.json             # 所有 turn、Review 反馈、接受的输出和最终状态
 ```
 

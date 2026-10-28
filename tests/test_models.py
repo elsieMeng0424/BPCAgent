@@ -165,7 +165,7 @@ class LLMTests(unittest.TestCase):
                         base_url="https://explicit.invalid/v1", temperature=0.3,
                         timeout=60, top_p=0.8)
             factory.assert_called_once_with(api_key="explicit-key",
-                                            base_url="https://explicit.invalid/v1", timeout=60)
+                                            base_url="https://explicit.invalid/v1", timeout=60, http_client=unittest.mock.ANY)
             factory.return_value.chat.completions.create.return_value = text_response()
             llm.invoke([], temperature=0, timeout=10, top_p=0.5)
             options = factory.return_value.chat.completions.create.call_args.kwargs

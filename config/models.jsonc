@@ -7,12 +7,12 @@
       "temperature": null,
       "max_tokens": 8192, // 每次模型请求的输出上限，包含思考 token
       "timeout": 180,
-      "max_tool_iterations": 12,
+      "max_tool_iterations": 24,
       "context": {
         "enabled": true, // false disables request budgeting and compaction
         "context_window": null, // Set the verified model context size; null means unknown, not unlimited
         "gateway_context_window": null, // Optional smaller route-specific context size
-        "max_input_tokens": 32000, // Project input cap; conservative UTF-8 byte estimation, not exact tokenization
+        "max_input_tokens": 128000, // Project input cap; conservative UTF-8 byte estimation, not exact tokenization
         "reserve_output_tokens": 8192, // Actual larger max_tokens overrides increase the reservation
         "safety_margin_tokens": 2048,
         "trigger_ratio": 0.75, // Start compaction above this fraction of usable input budget
@@ -28,8 +28,8 @@
       "temperature": null,
       "max_tokens": 8192,
       "timeout": 180,
-      "max_tool_iterations": 12,
-      "context": {"enabled": true, "context_window": null, "max_input_tokens": 32000} // Same defaults; set verified model/route limits when known
+      "max_tool_iterations": 24,
+      "context": {"enabled": true, "context_window": null, "max_input_tokens": 128000} // Same defaults; set verified model/route limits when known
     },
     "astra_medium": {
       "provider": "openai", // 可选："openai" | "claude" | "deepseek" | "gateway"

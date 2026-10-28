@@ -41,9 +41,12 @@ before parsing the complete selected value. JSON field selection preserves
 numbers, `null`, `"unknown"`, and evidence identifiers without inference.
 
 All system/developer instructions and user messages are retained. Function-call
-arguments, IDs and provider reasoning items are not rewritten. Tool errors,
-`get_stage_context` (including Review feedback), `state_check`, `submit_output`
-and reader results are protected. Recent outputs are preferred for retention;
+arguments, IDs and provider reasoning items are not rewritten. Tool errors and
+`submit_output` results are protected. Stage context and state checks can be
+archived losslessly and read back on demand. Old reader pages retire to the
+original record ID and page coordinates, without recursive archives; even pages
+below the ordinary compaction-size threshold can retire. Recent reader pages
+remain visible for the next model request. Recent outputs are preferred for retention;
 a recent oversized tool result can still be archived to meet the hard budget.
 Calls and their results are never split or removed; incomplete batches fail
 before any model request.

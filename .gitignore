@@ -11,6 +11,7 @@ dist/
 .DS_Store
 log/
 workspace/
+database/data/
 offline_evaluation/
 config/*.local.json
 .in

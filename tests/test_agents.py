@@ -195,7 +195,7 @@ class AgentTests(unittest.TestCase):
                 agent = BasicAgent("test", config=config)
                 resolve.assert_called_once_with(config, overrides={})
                 factory.assert_called_once_with(api_key="test-key",
-                    base_url="https://example.invalid/v1", timeout=120)
+                    base_url="https://example.invalid/v1", timeout=120, http_client=unittest.mock.ANY)
                 factory.return_value.chat.completions.create.assert_not_called()
                 self.assertIsInstance(agent.llm, LLM)
                 self.assertIs(agent.config, agent.llm.config)

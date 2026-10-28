@@ -1,0 +1,13 @@
+{
+  "root": "../database/data", // Local data only; excluded from Git
+  "fallback_proxy": "http://127.0.0.1:28374", // Direct first; used only after direct download failure
+  "minimum_free_bytes": 20000000000, // Refuse new downloads below 20 GB free
+  "max_file_bytes": 600000000, // Prevent accidental bulk PINDER structure downloads
+  "academic_use": true, // KEGG REST is for academic use; do not use this setting for commercial deployment
+  "biogrid_release": "5.0.262", // Pinned release, not a mutable LATEST filename
+  "pinder_release": "2024-02", // Index and metadata are pinned additionally by local SHA-256
+  "pathway": "hsa05215", // Human prostate cancer
+  "structure_limit": 100, // Representative related complexes, not all matching structures
+  "structure_budget_bytes": 300000000, // Total downloaded PDB bytes per selection run
+  "structure_max_file_bytes": 20000000 // Per PDB file
+}

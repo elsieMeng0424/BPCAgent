@@ -127,7 +127,7 @@ class ContextManagerTests(unittest.TestCase):
                 manager.read("r", **kwargs)
 
     def test_protected_content_fails_closed_instead_of_silent_truncation(self):
-        for name in ("get_stage_context", "state_check", "submit_output", "read_context_record"):
+        for name in ("submit_output", "read_context_record"):
             manager = self.manager()
             messages = tool_messages(name)
             before = deepcopy(messages)
@@ -279,7 +279,9 @@ class ContextAgentTests(unittest.TestCase):
             self.assertTrue(audit["events"])
             self.assertEqual(audit["records"], {})
             transcript = json.loads((path.parent / "transcript.json").read_text())
-            self.assertEqual(audit["last_request"], transcript[:-1])
+            # The final model response is a terminal submit call plus its tool
+            # result, not an additional paid acknowledgement response.
+            self.assertEqual(audit["last_request"], transcript[:-2])
 
     def test_workflow_review_receives_explicit_context_budget_failure(self):
         data = fixture_dataset(self.root / "data")

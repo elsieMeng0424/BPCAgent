@@ -1,6 +1,6 @@
 # Docker sandbox
 
-`SandboxShellTool` exposes the existing `run_shell(command)` action but runs each command in a new restricted local Linux container. Only task files persist between calls. The unified workflow `PatientStateAgent` now uses this sandbox by default through `patient_shell`; startup is lazy until the model calls Shell. See [patient-stage input and configuration](patient-request.md). The separate advanced `UnitPatientStateAgent` opts into it through `sandbox_config`; omitting that advanced configuration retains local Shell execution. A configured sandbox never falls back to host execution.
+`SandboxShellTool` exposes the existing `run_shell(command)` action but runs each command in a new restricted local Linux container. Only task files persist between calls. The unified workflow `PatientStateAgent` selects its backend through `config/tools.jsonc`: `sandbox` enables Docker, `local` runs on the host, and `disabled` removes Shell. The checked-in configuration temporarily selects local mode; the library default without that file remains sandbox. Docker startup is lazy until the model calls Shell. See [patient-stage input and configuration](patient-request.md). The separate advanced `UnitPatientStateAgent` opts into isolation through `sandbox_config`; omitting that advanced configuration retains local Shell execution. A configured sandbox never falls back to host execution.
 
 ## Prepare the image
 

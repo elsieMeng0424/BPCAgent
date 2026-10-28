@@ -1,0 +1,55 @@
+{
+  "checked_on": "2026-10-28",
+  "local_database": "data/knowledge.sqlite",
+  "status": "usable_partial_collection_guideline_permissions_pending",
+  "kegg": {
+    "pathway": "hsa05215",
+    "genes": 106,
+    "entries": 83,
+    "relations": 43,
+    "original_png_and_kgml": true
+  },
+  "biogrid": {
+    "release": "5.0.262",
+    "all_species_interaction_records": 2950299,
+    "chemical_records": 31540,
+    "ptm_records": 1128339,
+    "ptm_relationship_records": 73388,
+    "identifier_records": 45668759,
+    "human_seed_neighborhood_records": 66582,
+    "human_seed_internal_records": 4699,
+    "human_seed_chemical_records": 1194
+  },
+  "pinder": {
+    "release": "2024-02",
+    "full_index_rows_scanned": 2319564,
+    "related_index_records": 8169,
+    "related_metadata_records": 8169,
+    "both_partners_match_seeds": 5909,
+    "one_partner_matches_seeds": 2260,
+    "representative_structures_attempted": 100,
+    "representative_structures_downloaded": 97,
+    "structure_bytes": 25423308,
+    "bulk_archives_downloaded": false,
+    "failed_structure_ids": [
+      "8bol__A1_Q04609--8bol__A2_Q04609",
+      "6p8h__A1_P24385--6p8h__C1_P38936",
+      "1nw9__B1_P55211--1nw9__A1_P98170"
+    ],
+    "failure_note": "Both direct and configured fallback-proxy attempts timed out; details remain in data/derived/pinder/2024-02/structures.json."
+  },
+  "guidelines": {
+    "nccn_aua_asco_bodies_ingested": false,
+    "reason": "Reading/login access does not establish AI/RAG reuse authorization.",
+    "nci_text_sections": 120,
+    "nci_content_kind": "evidence_summary_not_guideline"
+  },
+  "network": {
+    "policy": "direct_first_then_http_proxy_127.0.0.1_28374_on_failure",
+    "completed_assets": 109,
+    "assets_downloaded_via_fallback": 4,
+    "raw_download_bytes": 770245739
+  },
+  "workflow_integration": "not_connected; scientific tools remain placeholders",
+  "tests": {"passed": 397, "skipped": 16}
+}

@@ -133,6 +133,12 @@ class SharedPatientState:
             raise ValueError("Evidence references must belong to the shared patient snapshot")
         return self._bound.get_evidence(self.cutoff_day, evidence_refs)
 
+    def model_view(self):
+        """Read a compact projection; canonical read()/artifacts remain unchanged."""
+        from .model_view import patient_model_view
+
+        return patient_model_view(self.read())
+
     @property
     def ready(self):
         return self._json is not None

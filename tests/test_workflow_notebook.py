@@ -43,7 +43,8 @@ class WorkflowNotebookTests(unittest.TestCase):
                 exec(compile(source, "test.ipynb:" + name, "exec"), namespace)
                 self.assertEqual(dict(os.environ), before)
             workflow.return_value.run.assert_called_once_with(
-                "看下BPC数据集病人051542前220天的病例，推荐他的下一步用药。")
+                "看下BPC数据集病人051542前100天的病例，推荐他的下一步用药。",
+                verbose=True, max_print_chars=4000)
             first_log = namespace["log_path"]
             self.assertEqual(first_log.parent, Path(namespace["workflow_result"]["task_dir"]) / "logs")
             self.assertTrue(first_log.is_file())
